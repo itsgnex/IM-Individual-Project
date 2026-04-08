@@ -63,6 +63,28 @@ AFRAME.registerComponent("menu-button", {
   }
 });
 
+AFRAME.registerComponent("float-drift", {
+  schema: {
+    xAmp: { type: "number", default: 0 },
+    yAmp: { type: "number", default: 0 },
+    zAmp: { type: "number", default: 0 },
+    speed: { type: "number", default: 0.2 },
+    phase: { type: "number", default: 0 }
+  },
+
+  init() {
+    this.basePosition = this.el.object3D.position.clone();
+  },
+
+  tick(time) {
+    const t = time / 1000;
+    const position = this.el.object3D.position;
+    position.x = this.basePosition.x + Math.sin(t * this.data.speed + this.data.phase) * this.data.xAmp;
+    position.y = this.basePosition.y + Math.cos(t * this.data.speed * 0.85 + this.data.phase) * this.data.yAmp;
+    position.z = this.basePosition.z + Math.sin(t * this.data.speed * 0.55 + this.data.phase) * this.data.zAmp;
+  }
+});
+
 const LEVEL_DATA = {
   1: {
     label: "LEVEL 1",
@@ -207,13 +229,20 @@ const GameManager = {
   movementVector: null,
   playerWorldPosition: null,
   ringLocalPosition: null,
+  currentEnvironment: null,
   textures: {},
 
   init() {
     this.sceneEl = document.getElementById("scene");
+    this.skyEl = document.getElementById("skyDome");
+    this.ambientLightEl = document.getElementById("ambientLight");
+    this.sunLightEl = document.getElementById("sunLight");
+    this.fillLightEl = document.getElementById("fillLight");
+    this.environmentRoot = document.getElementById("environmentRoot");
     this.worldRoot = document.getElementById("worldRoot");
     this.rigEl = document.getElementById("rig");
     this.cameraEl = document.getElementById("camera");
+    this.cockpitRoot = document.getElementById("cockpitRoot");
     this.mouseCursorEl = document.getElementById("mouseCursor");
     this.vrCursorEl = document.getElementById("vrCursor");
 
@@ -230,6 +259,8 @@ const GameManager = {
 
     this.loadHighScore();
     this.prepareTextures();
+    this.buildCockpitModel();
+    this.applyEnvironment("menu");
     this.buildUI();
     this.bindPersistentListeners();
     this.updateCursorMode();
@@ -291,6 +322,306 @@ const GameManager = {
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
+  },
+
+  buildCockpitModel() {
+    this.clearEntity(this.cockpitRoot);
+
+    const craftRoot = this.createElement("a-entity", this.cockpitRoot, {
+      id: "craftBody"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.24,
+      height: 0.06,
+      depth: 0.52,
+      position: "0 -0.02 -0.1",
+      material: "color: #c7d8f5; metalness: 0.35; roughness: 0.22"
+    });
+
+    this.createElement("a-cone", craftRoot, {
+      "radius-bottom": 0.09,
+      "radius-top": 0.015,
+      height: 0.32,
+      rotation: "90 0 0",
+      position: "0 -0.01 -0.36",
+      material: "color: #dbeafe; metalness: 0.28; roughness: 0.18"
+    });
+
+    this.createElement("a-sphere", craftRoot, {
+      radius: 0.18,
+      scale: "1.15 0.46 0.82",
+      position: "0 0.07 -0.02",
+      material: "color: #0f172a; opacity: 0.78; transparent: true; metalness: 0.1; roughness: 0.08"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.52,
+      height: 0.02,
+      depth: 0.08,
+      position: "0 -0.13 0.05",
+      material: "color: #22d3ee; emissive: #22d3ee; emissiveIntensity: 1.1; opacity: 0.82; transparent: true"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.88,
+      height: 0.03,
+      depth: 0.22,
+      position: "-0.52 -0.1 -0.02",
+      rotation: "0 0 10",
+      material: "color: #7aa2d6; metalness: 0.3; roughness: 0.24"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.88,
+      height: 0.03,
+      depth: 0.22,
+      position: "0.52 -0.1 -0.02",
+      rotation: "0 0 -10",
+      material: "color: #7aa2d6; metalness: 0.3; roughness: 0.24"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.26,
+      height: 0.025,
+      depth: 0.1,
+      position: "-0.96 -0.1 0.02",
+      rotation: "0 8 14",
+      material: "color: #9dc2f7; metalness: 0.3; roughness: 0.22"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.26,
+      height: 0.025,
+      depth: 0.1,
+      position: "0.96 -0.1 0.02",
+      rotation: "0 -8 -14",
+      material: "color: #9dc2f7; metalness: 0.3; roughness: 0.22"
+    });
+
+    this.createElement("a-sphere", craftRoot, {
+      radius: 0.035,
+      position: "0 0.02 -0.5",
+      material: "color: #f8fafc; emissive: #bae6fd; emissiveIntensity: 1.25"
+    });
+
+    this.createElement("a-sphere", craftRoot, {
+      radius: 0.025,
+      position: "-1.08 -0.08 0.02",
+      material: "color: #67e8f9; emissive: #67e8f9; emissiveIntensity: 0.9"
+    });
+
+    this.createElement("a-sphere", craftRoot, {
+      radius: 0.025,
+      position: "1.08 -0.08 0.02",
+      material: "color: #a5b4fc; emissive: #a5b4fc; emissiveIntensity: 0.9"
+    });
+  },
+
+  applyEnvironment(theme) {
+    if (this.currentEnvironment === theme) {
+      return;
+    }
+
+    this.currentEnvironment = theme;
+    this.clearEntity(this.environmentRoot);
+
+    if (theme === "level2") {
+      this.buildLevel2Environment();
+      return;
+    }
+
+    this.buildLevel1Environment();
+  },
+
+  buildLevel1Environment() {
+    this.sceneEl.setAttribute("background", "color", "#9dd7ff");
+    this.sceneEl.setAttribute("fog", "type: linear; color: #d8efff; near: 55; far: 220");
+    this.skyEl.setAttribute("color", "#88d8ff");
+    this.ambientLightEl.setAttribute("light", "type: ambient; intensity: 0.92; color: #f0f9ff");
+    this.sunLightEl.setAttribute("light", "type: directional; intensity: 0.95; color: #fff5d6");
+    this.sunLightEl.setAttribute("position", "-5 8 3");
+    this.fillLightEl.setAttribute("light", "type: directional; intensity: 0.35; color: #7dd3fc");
+    this.fillLightEl.setAttribute("position", "4 3 -3");
+
+    this.createCelestialBody({
+      position: "-22 16 -78",
+      innerRadius: 3.2,
+      outerRadius: 5.5,
+      innerColor: "#fff8cf",
+      outerColor: "#fde68a"
+    });
+
+    [
+      { x: -16, y: 9, z: -36, scale: 2.4, opacity: 0.92, drift: { xAmp: 1.8, yAmp: 0.35, zAmp: 1.2, speed: 0.18, phase: 0.4 } },
+      { x: 14, y: 7.2, z: -58, scale: 3.1, opacity: 0.9, drift: { xAmp: 1.5, yAmp: 0.28, zAmp: 1.4, speed: 0.14, phase: 1.1 } },
+      { x: -5, y: 10.6, z: -82, scale: 2.8, opacity: 0.86, drift: { xAmp: 1.2, yAmp: 0.3, zAmp: 1.1, speed: 0.12, phase: 2.2 } },
+      { x: 18, y: 8.8, z: -104, scale: 2.6, opacity: 0.84, drift: { xAmp: 1.7, yAmp: 0.32, zAmp: 1.0, speed: 0.16, phase: 0.8 } },
+      { x: -18, y: 6.4, z: -132, scale: 3.4, opacity: 0.9, drift: { xAmp: 1.4, yAmp: 0.22, zAmp: 1.3, speed: 0.13, phase: 1.9 } },
+      { x: 6, y: 11.8, z: -158, scale: 2.3, opacity: 0.82, drift: { xAmp: 1.1, yAmp: 0.25, zAmp: 1.0, speed: 0.2, phase: 2.9 } },
+      { x: 0, y: 5.7, z: -188, scale: 4.2, opacity: 0.76, drift: { xAmp: 1.9, yAmp: 0.35, zAmp: 1.4, speed: 0.1, phase: 0.2 } }
+    ].forEach((cloud) => {
+      this.createDecorCloud(this.environmentRoot, cloud, {
+        tint: "#ffffff",
+        glow: "#dbeafe"
+      });
+    });
+
+    [
+      { x: -20, y: -1.8, z: -72, scale: 1.5 },
+      { x: 18, y: -2.2, z: -116, scale: 1.75 },
+      { x: -8, y: -3.5, z: -164, scale: 1.9 },
+      { x: 22, y: -4.2, z: -210, scale: 2.15 }
+    ].forEach((island) => {
+      this.createFloatingIsland(this.environmentRoot, island, {
+        topColor: "#8ccf72",
+        sideColor: "#7f6b4d",
+        rockColor: "#cbd5e1",
+        accentColor: "#22c55e"
+      });
+    });
+  },
+
+  buildLevel2Environment() {
+    this.sceneEl.setAttribute("background", "color", "#21132f");
+    this.sceneEl.setAttribute("fog", "type: linear; color: #3a2852; near: 42; far: 180");
+    this.skyEl.setAttribute("color", "#29163c");
+    this.ambientLightEl.setAttribute("light", "type: ambient; intensity: 0.72; color: #ddd6fe");
+    this.sunLightEl.setAttribute("light", "type: directional; intensity: 0.55; color: #fbbf24");
+    this.sunLightEl.setAttribute("position", "4 7 2");
+    this.fillLightEl.setAttribute("light", "type: directional; intensity: 0.46; color: #818cf8");
+    this.fillLightEl.setAttribute("position", "-4 3 -4");
+
+    this.createCelestialBody({
+      position: "18 13 -72",
+      innerRadius: 2.6,
+      outerRadius: 4.8,
+      innerColor: "#fbbf24",
+      outerColor: "#a78bfa"
+    });
+
+    [
+      { x: -18, y: 8.8, z: -30, scale: 2.8, opacity: 0.9, drift: { xAmp: 1.4, yAmp: 0.3, zAmp: 1.1, speed: 0.2, phase: 0.6 } },
+      { x: 16, y: 7.5, z: -52, scale: 3.4, opacity: 0.9, drift: { xAmp: 1.5, yAmp: 0.35, zAmp: 1.3, speed: 0.17, phase: 1.4 } },
+      { x: -4, y: 10.1, z: -78, scale: 3.2, opacity: 0.85, drift: { xAmp: 1.1, yAmp: 0.28, zAmp: 1.0, speed: 0.14, phase: 2.3 } },
+      { x: 19, y: 9.2, z: -108, scale: 2.8, opacity: 0.82, drift: { xAmp: 1.2, yAmp: 0.22, zAmp: 1.2, speed: 0.16, phase: 0.9 } },
+      { x: -20, y: 6.8, z: -136, scale: 3.7, opacity: 0.88, drift: { xAmp: 1.7, yAmp: 0.26, zAmp: 1.1, speed: 0.13, phase: 1.9 } },
+      { x: 7, y: 11.2, z: -164, scale: 2.7, opacity: 0.8, drift: { xAmp: 1.0, yAmp: 0.22, zAmp: 1.0, speed: 0.18, phase: 2.8 } },
+      { x: 0, y: 6.0, z: -196, scale: 4.3, opacity: 0.74, drift: { xAmp: 1.8, yAmp: 0.3, zAmp: 1.3, speed: 0.12, phase: 0.3 } }
+    ].forEach((cloud) => {
+      this.createDecorCloud(this.environmentRoot, cloud, {
+        tint: "#c4b5fd",
+        glow: "#f97316"
+      });
+    });
+
+    [
+      { x: -22, y: -2.0, z: -66, scale: 1.6 },
+      { x: 17, y: -1.6, z: -114, scale: 1.82 },
+      { x: -10, y: -3.6, z: -156, scale: 2.0 },
+      { x: 20, y: -4.4, z: -208, scale: 2.25 }
+    ].forEach((island) => {
+      this.createFloatingIsland(this.environmentRoot, island, {
+        topColor: "#6d5c8b",
+        sideColor: "#3a2948",
+        rockColor: "#a78bfa",
+        accentColor: "#f97316"
+      });
+    });
+  },
+
+  createCelestialBody(options) {
+    const root = this.createElement("a-entity", this.environmentRoot, {
+      position: options.position
+    });
+
+    this.createElement("a-sphere", root, {
+      radius: options.outerRadius,
+      material: `color: ${options.outerColor}; opacity: 0.2; transparent: true; shader: flat`
+    });
+
+    this.createElement("a-sphere", root, {
+      radius: options.innerRadius,
+      material: `color: ${options.innerColor}; emissive: ${options.innerColor}; emissiveIntensity: 1.45; shader: flat`
+    });
+  },
+
+  createDecorCloud(parent, cloud, palette) {
+    const root = this.createElement("a-entity", parent, {
+      position: `${cloud.x} ${cloud.y} ${cloud.z}`,
+      scale: `${cloud.scale} ${cloud.scale * 0.72} ${cloud.scale}`,
+      "float-drift": `xAmp: ${cloud.drift.xAmp}; yAmp: ${cloud.drift.yAmp}; zAmp: ${cloud.drift.zAmp}; speed: ${cloud.drift.speed}; phase: ${cloud.drift.phase}`
+    });
+
+    [
+      { x: 0, y: 0, z: 0, radius: 0.88 },
+      { x: -0.78, y: 0.08, z: 0.06, radius: 0.66 },
+      { x: 0.86, y: 0.05, z: -0.08, radius: 0.72 },
+      { x: 0.12, y: 0.36, z: 0.02, radius: 0.58 },
+      { x: -0.16, y: -0.02, z: 0.42, radius: 0.6 }
+    ].forEach((puff) => {
+      this.createElement("a-sphere", root, {
+        position: `${puff.x} ${puff.y} ${puff.z}`,
+        geometry: `primitive: sphere; radius: ${puff.radius}; segmentsHeight: 10; segmentsWidth: 12`,
+        material: `src: ${this.textures.cloud}; color: ${palette.tint}; opacity: ${cloud.opacity}; transparent: true; roughness: 1; metalness: 0.0`
+      });
+    });
+
+    this.createElement("a-sphere", root, {
+      radius: 0.95,
+      scale: "1.7 0.7 1.4",
+      position: "0 0.02 -0.1",
+      material: `color: ${palette.glow}; opacity: 0.08; transparent: true; shader: flat`
+    });
+  },
+
+  createFloatingIsland(parent, island, palette) {
+    const root = this.createElement("a-entity", parent, {
+      position: `${island.x} ${island.y} ${island.z}`,
+      scale: `${island.scale} ${island.scale} ${island.scale}`,
+      "float-drift": `xAmp: 0.45; yAmp: 0.25; zAmp: 0.3; speed: 0.16; phase: ${(island.x + island.z) * 0.01}`
+    });
+
+    this.createElement("a-cylinder", root, {
+      radius: 1.8,
+      height: 0.48,
+      position: "0 0 0",
+      material: `color: ${palette.topColor}; roughness: 0.92; metalness: 0.02`
+    });
+
+    this.createElement("a-cone", root, {
+      "radius-bottom": 1.62,
+      "radius-top": 0.18,
+      height: 2.0,
+      position: "0 -1.18 0",
+      material: `color: ${palette.sideColor}; roughness: 0.96; metalness: 0.0`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.36,
+      height: 0.32,
+      depth: 0.36,
+      position: "-0.55 0.32 -0.18",
+      rotation: "0 20 0",
+      material: `color: ${palette.rockColor}; roughness: 0.88; metalness: 0.04`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.28,
+      height: 0.25,
+      depth: 0.28,
+      position: "0.42 0.28 0.08",
+      rotation: "0 -18 0",
+      material: `color: ${palette.rockColor}; roughness: 0.88; metalness: 0.04`
+    });
+
+    this.createElement("a-cone", root, {
+      "radius-bottom": 0.2,
+      "radius-top": 0.02,
+      height: 0.48,
+      position: "0.2 0.46 -0.28",
+      material: `color: ${palette.accentColor}; emissive: ${palette.accentColor}; emissiveIntensity: 0.35; roughness: 0.5`
+    });
   },
 
   buildUI() {
@@ -539,10 +870,11 @@ const GameManager = {
   },
 
   applyUIVisibility() {
+    const gameplayVisible = this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2;
     const visibility = {
       splashUI: this.state === this.STATES.SPLASH,
       menuUI: this.state === this.STATES.MENU,
-      hudUI: this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2,
+      hudUI: gameplayVisible,
       pauseUI: this.state === this.STATES.PAUSED,
       winUI: this.state === this.STATES.WIN,
       gameOverUI: this.state === this.STATES.GAME_OVER
@@ -553,6 +885,8 @@ const GameManager = {
       root.setAttribute("visible", isVisible);
       this.setButtonsEnabled(root, isVisible);
     });
+
+    this.cockpitRoot.setAttribute("visible", gameplayVisible);
   },
 
   setButtonsEnabled(root, enabled) {
@@ -654,6 +988,8 @@ const GameManager = {
     this.pausedFromState = null;
     this.gameplayFrozen = false;
 
+    this.applyEnvironment(levelNumber === 2 ? "level2" : "level1");
+
     this.positionPlayerAtStart();
     this.buildLevelEntities();
     this.refreshHud();
@@ -751,6 +1087,7 @@ const GameManager = {
     this.transitionLocked = false;
     this.gameplayFrozen = true;
     this.positionPlayerAtStart();
+    this.applyEnvironment("menu");
     this.setState(this.STATES.MENU);
   },
 
