@@ -12,8 +12,382 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #040b1b;
+      background: #040b1b url("baground.png") center center / cover no-repeat;
       font-family: Arial, sans-serif;
+      color: #ffffff;
+    }
+
+    body {
+      position: relative;
+    }
+
+    body.splash-active {
+      background-image: url("baground.png");
+    }
+
+    body.menu-active {
+      background-image: url("baground_2.png");
+    }
+
+    #splash-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 4vw, 56px);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    #splash-overlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 38%, rgba(8, 18, 30, 0.12), rgba(3, 9, 18, 0.24) 68%, rgba(2, 7, 14, 0.34));
+      pointer-events: none;
+    }
+
+    body:not(.splash-active) #splash-overlay {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 29;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 4vw, 56px);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    #menu-overlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 38%, rgba(8, 18, 30, 0.08), rgba(3, 9, 18, 0.18) 70%, rgba(2, 7, 14, 0.28));
+      pointer-events: none;
+    }
+
+    body:not(.menu-active) #menu-overlay,
+    body.vr-mode #menu-overlay {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #splash-content {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(680px, 92vw);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 22px;
+      text-align: center;
+      transform: translate(-50%, -53%);
+      pointer-events: none;
+    }
+
+    #menu-content {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(560px, 92vw);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .splash-title-group,
+    .splash-info-card,
+    .splash-meta-group,
+    .menu-title-group,
+    .menu-meta-group,
+    .menu-button-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: fit-content;
+      max-width: 100%;
+      margin-inline: auto;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .menu-title-group {
+      gap: 12px;
+    }
+
+    .menu-meta-group {
+      gap: 8px;
+    }
+
+    .menu-button-stack {
+      gap: 14px;
+      width: min(430px, 82vw);
+    }
+
+    .splash-title-accent {
+      width: min(220px, 32vw);
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(219, 234, 254, 0.9), rgba(255, 255, 255, 0));
+      box-shadow: 0 0 24px rgba(125, 211, 252, 0.26);
+    }
+
+    #splashTitle,
+    #splashSubtitle,
+    #splashStudentName,
+    #splashStudentId,
+    #splashCourseLine,
+    #splashTagline,
+    #menuTitle,
+    #menuSubtitle,
+    #menuHelper,
+    #menuVrHint {
+      margin: 0;
+      text-align: center;
+      text-shadow: 0 2px 6px rgba(3, 17, 32, 0.36), 0 8px 24px rgba(3, 17, 32, 0.24);
+    }
+
+    #splashTitle {
+      font-size: clamp(48px, 6vw, 84px);
+      font-weight: 700;
+      letter-spacing: 0.015em;
+      line-height: 1.02;
+      color: #ffffff;
+    }
+
+    #splashSubtitle {
+      max-width: 17ch;
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: rgba(7, 24, 40, 0.22);
+      backdrop-filter: blur(4px);
+      font-size: clamp(24px, 2.4vw, 38px);
+      font-weight: 500;
+      line-height: 1.18;
+      color: #f8fbff;
+    }
+
+    .splash-info-card {
+      gap: 6px;
+      padding: 18px 26px;
+      border-radius: 24px;
+      background: rgba(6, 22, 38, 0.24);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 12px 40px rgba(3, 17, 32, 0.12);
+    }
+
+    #splashStudentName,
+    #splashStudentId {
+      font-size: clamp(23px, 2vw, 31px);
+      font-weight: 500;
+      line-height: 1.14;
+      color: #ffffff;
+    }
+
+    .splash-meta-group {
+      gap: 8px;
+    }
+
+    #splashCourseLine,
+    #splashTagline {
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(8, 32, 50, 0.16);
+      backdrop-filter: blur(4px);
+    }
+
+    #splashCourseLine {
+      font-size: clamp(18px, 1.45vw, 24px);
+      font-weight: 500;
+      color: #edf5ff;
+    }
+
+    #splashTagline {
+      font-size: clamp(17px, 1.25vw, 22px);
+      font-style: italic;
+      font-weight: 400;
+      color: #d7e9ff;
+    }
+
+    #menuTitle {
+      font-size: clamp(38px, 4.5vw, 64px);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.04;
+      color: #ffffff;
+    }
+
+    #menuSubtitle {
+      max-width: 15ch;
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: rgba(7, 24, 40, 0.22);
+      backdrop-filter: blur(4px);
+      font-size: clamp(22px, 2.2vw, 34px);
+      font-weight: 500;
+      line-height: 1.18;
+      color: #f8fbff;
+    }
+
+    #menuHelper,
+    #menuVrHint {
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(8, 32, 50, 0.16);
+      backdrop-filter: blur(4px);
+      font-size: clamp(16px, 1.1vw, 20px);
+      line-height: 1.25;
+    }
+
+    #menuHelper {
+      color: #edf5ff;
+    }
+
+    #menuVrHint {
+      color: #d7e9ff;
+    }
+
+    #htmlSplashContinueButton {
+      margin-top: 20px;
+      align-self: center;
+      min-width: min(320px, 74vw);
+      padding: 18px 34px;
+      border: 0;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #1da8ff 0%, #0b8be7 100%);
+      color: #ffffff;
+      font-size: clamp(22px, 2vw, 34px);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      box-shadow: 0 18px 40px rgba(7, 76, 122, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+    }
+
+    #htmlSplashContinueButton:hover,
+    #htmlSplashContinueButton:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(7, 76, 122, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+      filter: brightness(1.04);
+      outline: none;
+    }
+
+    .html-menu-button {
+      width: 100%;
+      padding: 18px 26px;
+      border: 0;
+      border-radius: 22px;
+      color: #ffffff;
+      font-size: clamp(22px, 2vw, 32px);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+      box-shadow: 0 18px 40px rgba(3, 17, 32, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .html-menu-button:hover,
+    .html-menu-button:focus-visible {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+      outline: none;
+    }
+
+    #htmlMenuMusicButton,
+    #htmlStoryModeButton {
+      background: linear-gradient(180deg, #176c84 0%, #0f4c5c 100%);
+    }
+
+    #htmlMenuDifficultyButton,
+    #htmlEndlessModeButton {
+      background: linear-gradient(180deg, #6d28d9 0%, #4c1d95 100%);
+    }
+
+    #htmlMenuThemeButton {
+      background: linear-gradient(180deg, #c45a1f 0%, #8b3f14 100%);
+    }
+
+    @media (max-width: 900px) {
+      #splash-content {
+        transform: translate(-50%, -52%);
+        gap: 18px;
+      }
+
+      #menu-content {
+        transform: translate(-50%, -50%);
+        gap: 16px;
+      }
+
+      .splash-info-card {
+        padding: 16px 22px;
+      }
+
+      #htmlSplashContinueButton {
+        min-width: min(300px, 78vw);
+      }
+    }
+
+    @media (max-width: 640px) {
+      #splash-content {
+        width: min(92vw, 560px);
+        transform: translate(-50%, -51%);
+        gap: 16px;
+      }
+
+      #menu-content {
+        width: min(92vw, 520px);
+        gap: 14px;
+      }
+
+      #splashSubtitle {
+        max-width: 19ch;
+        padding: 10px 18px;
+      }
+
+      #menuSubtitle {
+        max-width: 18ch;
+        padding: 10px 18px;
+      }
+
+      .splash-info-card {
+        width: min(88vw, 420px);
+      }
+
+      .menu-button-stack {
+        width: min(86vw, 420px);
+      }
+
+      #htmlSplashContinueButton {
+        min-width: min(280px, 82vw);
+      }
+    }
+
+    #scene,
+    .a-canvas {
+      background: transparent !important;
     }
 
     #texture-canvases {
@@ -26,7 +400,52 @@
     }
   </style>
 </head>
-<body>
+<body class="splash-active">
+  <div id="splash-overlay" aria-live="polite">
+    <div id="splash-content">
+      <div class="splash-title-group">
+        <div class="splash-title-accent"></div>
+        <h1 id="splashTitle">Sky Ring Flyer</h1>
+        <p id="splashSubtitle">Fly your paper plane through the clouds</p>
+      </div>
+
+      <div class="splash-info-card">
+        <p id="splashStudentName">Student: Your Name</p>
+        <p id="splashStudentId">ID: Your Student ID</p>
+      </div>
+
+      <div class="splash-meta-group">
+        <p id="splashCourseLine">Sky Ring Flyer VR Assignment</p>
+        <p id="splashTagline">A whimsical stereoscopic VR sky run</p>
+      </div>
+
+      <button id="htmlSplashContinueButton" type="button">Continue</button>
+    </div>
+  </div>
+
+  <div id="menu-overlay" aria-live="polite" aria-hidden="true">
+    <div id="menu-content">
+      <div class="menu-title-group">
+        <div class="splash-title-accent"></div>
+        <h2 id="menuTitle">Paper Flight Setup</h2>
+        <p id="menuSubtitle">Tune your sky run before takeoff</p>
+      </div>
+
+      <div class="menu-meta-group">
+        <p id="menuHelper">Use gaze or mouse click to select an option.</p>
+        <p id="menuVrHint">Tap the goggles icon on mobile for stereoscopic VR.</p>
+      </div>
+
+      <div class="menu-button-stack">
+        <button id="htmlMenuMusicButton" class="html-menu-button" type="button">Music: OFF</button>
+        <button id="htmlMenuDifficultyButton" class="html-menu-button" type="button">Difficulty: EASY</button>
+        <button id="htmlMenuThemeButton" class="html-menu-button" type="button">Endless Theme: Day</button>
+        <button id="htmlStoryModeButton" class="html-menu-button" type="button">Story Mode</button>
+        <button id="htmlEndlessModeButton" class="html-menu-button" type="button">Endless Mode</button>
+      </div>
+    </div>
+  </div>
+
   <div id="texture-canvases" aria-hidden="true">
     <canvas id="ringTextureCanvas" width="256" height="256"></canvas>
     <canvas id="bonusTextureCanvas" width="256" height="256"></canvas>
@@ -36,8 +455,7 @@
   <a-scene
     id="scene"
     game-loop
-    background="color: #040b1b"
-    renderer="antialias: true; colorManagement: true"
+    renderer="antialias: true; colorManagement: true; alpha: true"
     vr-mode-ui="enabled: true"
     device-orientation-permission-ui="enabled: true"
   >

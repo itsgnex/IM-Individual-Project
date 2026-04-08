@@ -221,9 +221,15 @@ const GameManager = {
     LEVEL_1: "LEVEL_1",
     LEVEL_2: "LEVEL_2",
     LEVEL_3: "LEVEL_3",
+    ENDLESS: "ENDLESS",
     WIN: "WIN",
     GAME_OVER: "GAME_OVER",
     PAUSED: "PAUSED"
+  },
+
+  GAME_MODES: {
+    STORY: "STORY",
+    ENDLESS: "ENDLESS"
   },
 
   STUDENT_INFO: {
@@ -247,6 +253,8 @@ const GameManager = {
     }
   },
 
+  ENDLESS_THEMES: ["Day", "Sunset", "Night"],
+
   bounds: {
     xMin: -5.2,
     xMax: 5.2,
@@ -265,7 +273,9 @@ const GameManager = {
 
   state: null,
   pausedFromState: null,
+  gameMode: "STORY",
   difficulty: "EASY",
+  endlessTheme: "Day",
   gameplayFrozen: true,
   transitionLocked: false,
   musicEnabled: false,
@@ -291,6 +301,25 @@ const GameManager = {
   playerWorldPosition: null,
   ringLocalPosition: null,
   planeNoseProbeEl: null,
+  endlessBaseSpeed: 8.1,
+  endlessBaseLateralSpeed: 3.6,
+  endlessBaseVerticalSpeed: 3.3,
+  endlessSpeedRampPerSecond: 0.055,
+  endlessMaxSpeedBoost: 2.4,
+  endlessBehindDistance: 20,
+  endlessNextZ: 0,
+  endlessRingGapMin: 8,
+  endlessRingGapMax: 12,
+  endlessUpcomingTarget: 12,
+  endlessObstacleTarget: 8,
+  endlessLastRingX: 0,
+  endlessLastRingY: 2.3,
+  endlessRingSerial: 0,
+  endlessObstacleSerial: 0,
+  endlessElapsed: 0,
+  endlessLastHudLogAt: 0,
+  endlessScenery: [],
+  endlessSceneryNextZ: 0,
   startGateEntity: null,
   finishGateEntity: null,
   currentEnvironment: null,
@@ -309,6 +338,20 @@ const GameManager = {
     this.cockpitRoot = document.getElementById("cockpitRoot");
     this.mouseCursorEl = document.getElementById("mouseCursor");
     this.vrCursorEl = document.getElementById("vrCursor");
+    this.htmlSplashOverlay = document.getElementById("splash-overlay");
+    this.htmlSplashContinueButton = document.getElementById("htmlSplashContinueButton");
+    this.htmlSplashTitle = document.getElementById("splashTitle");
+    this.htmlSplashSubtitle = document.getElementById("splashSubtitle");
+    this.htmlSplashStudentName = document.getElementById("splashStudentName");
+    this.htmlSplashStudentId = document.getElementById("splashStudentId");
+    this.htmlSplashCourseLine = document.getElementById("splashCourseLine");
+    this.htmlSplashTagline = document.getElementById("splashTagline");
+    this.htmlMenuOverlay = document.getElementById("menu-overlay");
+    this.htmlMenuMusicButton = document.getElementById("htmlMenuMusicButton");
+    this.htmlMenuDifficultyButton = document.getElementById("htmlMenuDifficultyButton");
+    this.htmlMenuThemeButton = document.getElementById("htmlMenuThemeButton");
+    this.htmlStoryModeButton = document.getElementById("htmlStoryModeButton");
+    this.htmlEndlessModeButton = document.getElementById("htmlEndlessModeButton");
 
     this.splashUI = document.getElementById("splashUI");
     this.menuUI = document.getElementById("menuUI");
@@ -322,6 +365,7 @@ const GameManager = {
     this.ringLocalPosition = new THREE.Vector3();
 
     this.loadHighScore();
+    this.setupHtmlSplashContent();
     this.prepareTextures();
     this.buildCockpitModel();
     this.applyEnvironment("menu");
@@ -331,6 +375,32 @@ const GameManager = {
     this.refreshMenu();
     this.refreshHud();
     this.setState(this.STATES.SPLASH);
+  },
+
+  setupHtmlSplashContent() {
+    if (this.htmlSplashTitle) {
+      this.htmlSplashTitle.textContent = "Sky Ring Flyer";
+    }
+
+    if (this.htmlSplashSubtitle) {
+      this.htmlSplashSubtitle.textContent = "Fly your paper plane through the clouds";
+    }
+
+    if (this.htmlSplashStudentName) {
+      this.htmlSplashStudentName.textContent = `Student: ${this.STUDENT_INFO.name}`;
+    }
+
+    if (this.htmlSplashStudentId) {
+      this.htmlSplashStudentId.textContent = `ID: ${this.STUDENT_INFO.id}`;
+    }
+
+    if (this.htmlSplashCourseLine) {
+      this.htmlSplashCourseLine.textContent = this.STUDENT_INFO.course;
+    }
+
+    if (this.htmlSplashTagline) {
+      this.htmlSplashTagline.textContent = "A whimsical stereoscopic VR sky run";
+    }
   },
 
   prepareTextures() {
@@ -607,7 +677,19 @@ const GameManager = {
     }
 
     this.currentEnvironment = theme;
+    this.endlessScenery = [];
+    this.endlessSceneryNextZ = 0;
     this.clearEntity(this.environmentRoot);
+
+    if (typeof theme === "string" && theme.startsWith("endless-")) {
+      this.buildEndlessEnvironment(theme.slice("endless-".length));
+      return;
+    }
+
+    if (theme === "endless") {
+      this.buildEndlessEnvironment(this.endlessTheme.toLowerCase());
+      return;
+    }
 
     if (theme === "level3") {
       this.buildLevel3Environment();
@@ -818,6 +900,194 @@ const GameManager = {
     });
   },
 
+  buildEndlessEnvironment(themeName = "day") {
+    const theme = this.getEndlessThemeConfig(themeName);
+
+    this.sceneEl.setAttribute("background", `color: ${theme.background}`);
+    this.sceneEl.setAttribute("fog", `type: linear; color: ${theme.fogColor}; near: ${theme.fogNear}; far: ${theme.fogFar}`);
+    this.skyEl.setAttribute("color", theme.skyColor);
+    this.ambientLightEl.setAttribute("light", `type: ambient; intensity: ${theme.ambientIntensity}; color: ${theme.ambientColor}`);
+    this.sunLightEl.setAttribute("light", `type: directional; intensity: ${theme.sunIntensity}; color: ${theme.sunColor}`);
+    this.sunLightEl.setAttribute("position", theme.sunPosition);
+    this.fillLightEl.setAttribute("light", `type: directional; intensity: ${theme.fillIntensity}; color: ${theme.fillColor}`);
+    this.fillLightEl.setAttribute("position", theme.fillPosition);
+
+    this.createCelestialBody({
+      position: theme.orbPosition,
+      innerRadius: theme.orbInnerRadius,
+      outerRadius: theme.orbOuterRadius,
+      innerColor: theme.orbInnerColor,
+      outerColor: theme.orbOuterColor
+    });
+
+    if (theme.showStars) {
+      [
+        { position: "-16 12 -52", scale: 0.82, drift: { xAmp: 0.35, yAmp: 0.12, zAmp: 0.18, speed: 0.16, phase: 0.2 } },
+        { position: "12 11 -84", scale: 0.7, drift: { xAmp: 0.3, yAmp: 0.1, zAmp: 0.16, speed: 0.14, phase: 1.1 } },
+        { position: "-6 13 -128", scale: 0.78, drift: { xAmp: 0.34, yAmp: 0.12, zAmp: 0.18, speed: 0.15, phase: 2.1 } },
+        { position: "18 10 -166", scale: 0.74, drift: { xAmp: 0.32, yAmp: 0.1, zAmp: 0.16, speed: 0.13, phase: 2.7 } },
+        { position: "4 12 -214", scale: 0.8, drift: { xAmp: 0.36, yAmp: 0.12, zAmp: 0.18, speed: 0.12, phase: 1.8 } }
+      ].forEach((star) => {
+        this.createFloatingStar(this.environmentRoot, {
+          ...star,
+          coreColor: theme.starCoreColor,
+          sparkColor: theme.starSparkColor,
+          glowColor: theme.starGlowColor
+        });
+      });
+    }
+
+    [
+      { x: -16, y: 8.4, z: -40, scale: 2.5, opacity: theme.cloudOpacity, drift: { xAmp: 1.3, yAmp: 0.24, zAmp: 1.1, speed: 0.15, phase: 0.5 } },
+      { x: 15, y: 7.5, z: -72, scale: 3.0, opacity: theme.cloudOpacity - 0.04, drift: { xAmp: 1.2, yAmp: 0.22, zAmp: 1.1, speed: 0.13, phase: 1.2 } },
+      { x: -4, y: 10.2, z: -112, scale: 2.8, opacity: theme.cloudOpacity - 0.06, drift: { xAmp: 1.0, yAmp: 0.18, zAmp: 0.9, speed: 0.11, phase: 2.0 } },
+      { x: 18, y: 8.9, z: -152, scale: 2.6, opacity: theme.cloudOpacity - 0.08, drift: { xAmp: 1.0, yAmp: 0.2, zAmp: 0.92, speed: 0.12, phase: 0.9 } },
+      { x: -18, y: 6.6, z: -192, scale: 3.2, opacity: theme.cloudOpacity - 0.02, drift: { xAmp: 1.25, yAmp: 0.22, zAmp: 1.0, speed: 0.1, phase: 1.7 } },
+      { x: 6, y: 11.3, z: -230, scale: 2.4, opacity: theme.cloudOpacity - 0.1, drift: { xAmp: 0.92, yAmp: 0.18, zAmp: 0.84, speed: 0.13, phase: 2.6 } }
+    ].forEach((cloud) => {
+      this.createDecorCloud(this.environmentRoot, cloud, {
+        tint: theme.cloudTint,
+        glow: theme.cloudGlow
+      });
+    });
+
+    [
+      { position: "-14 7.8 -60", rotation: "0 0 -14", scale: 1.55, accentColor: theme.paperAccents[0] },
+      { position: "16 8.6 -126", rotation: "0 0 18", scale: 1.42, accentColor: theme.paperAccents[1] },
+      { position: "-8 9.2 -198", rotation: "0 0 -10", scale: 1.64, accentColor: theme.paperAccents[2] }
+    ].forEach((paperShape, index) => {
+      const shapeEl = this.createUiPaperPlaneDecor(this.environmentRoot, paperShape);
+      shapeEl.setAttribute(
+        "float-drift",
+        `xAmp: 0.48; yAmp: 0.16; zAmp: 0.26; speed: 0.12; phase: ${0.7 + index}`
+      );
+    });
+
+    [
+      { x: -20, y: -2.0, z: -88, scale: 1.6 },
+      { x: 18, y: -2.5, z: -148, scale: 1.85 },
+      { x: -10, y: -3.8, z: -210, scale: 2.08 },
+      { x: 22, y: -4.4, z: -268, scale: 2.28 }
+    ].forEach((island) => {
+      this.createFloatingIsland(this.environmentRoot, island, theme.fixedIslandPalette);
+    });
+
+    this.buildEndlessSceneryLoop();
+  },
+
+  getEndlessThemeConfig(themeName = this.endlessTheme) {
+    const normalizedTheme = String(themeName).toLowerCase();
+
+    if (normalizedTheme === "sunset") {
+      return {
+        background: "#f59e7b",
+        fogColor: "#f6a985",
+        fogNear: 48,
+        fogFar: 230,
+        skyColor: "#f472b6",
+        ambientIntensity: 0.8,
+        ambientColor: "#fff1e6",
+        sunIntensity: 0.68,
+        sunColor: "#ffd6a5",
+        sunPosition: "-5 7 3",
+        fillIntensity: 0.5,
+        fillColor: "#c084fc",
+        fillPosition: "4 3 -4",
+        orbPosition: "-18 11 -92",
+        orbInnerRadius: 2.7,
+        orbOuterRadius: 5.0,
+        orbInnerColor: "#ffe7c2",
+        orbOuterColor: "#fb7185",
+        showStars: false,
+        starCoreColor: "#ffffff",
+        starSparkColor: "#fecdd3",
+        starGlowColor: "#f9a8d4",
+        cloudTint: "#fff1e6",
+        cloudGlow: "#f9a8d4",
+        cloudOpacity: 0.78,
+        paperAccents: ["#fdba74", "#f9a8d4", "#c4b5fd"],
+        fixedIslandPalette: {
+          topColor: "#f7c46b",
+          sideColor: "#8f5b48",
+          rockColor: "#fde7d8",
+          accentColor: "#fb7185"
+        }
+      };
+    }
+
+    if (normalizedTheme === "night") {
+      return {
+        background: "#090d26",
+        fogColor: "#1a1842",
+        fogNear: 42,
+        fogFar: 220,
+        skyColor: "#0b1234",
+        ambientIntensity: 0.66,
+        ambientColor: "#dbeafe",
+        sunIntensity: 0.34,
+        sunColor: "#c4b5fd",
+        sunPosition: "-3 9 2",
+        fillIntensity: 0.5,
+        fillColor: "#60a5fa",
+        fillPosition: "4 4 -5",
+        orbPosition: "-18 15 -94",
+        orbInnerRadius: 2.9,
+        orbOuterRadius: 5.4,
+        orbInnerColor: "#f8fafc",
+        orbOuterColor: "#93c5fd",
+        showStars: true,
+        starCoreColor: "#ffffff",
+        starSparkColor: "#e9d5ff",
+        starGlowColor: "#93c5fd",
+        cloudTint: "#ddd6fe",
+        cloudGlow: "#93c5fd",
+        cloudOpacity: 0.66,
+        paperAccents: ["#93c5fd", "#c4b5fd", "#f9a8d4"],
+        fixedIslandPalette: {
+          topColor: "#6c4ea3",
+          sideColor: "#2c234f",
+          rockColor: "#c4b5fd",
+          accentColor: "#f472b6"
+        }
+      };
+    }
+
+    return {
+      background: "#66c9ff",
+      fogColor: "#b8e8ff",
+      fogNear: 54,
+      fogFar: 240,
+      skyColor: "#7bd4ff",
+      ambientIntensity: 0.88,
+      ambientColor: "#eff6ff",
+      sunIntensity: 0.82,
+      sunColor: "#fff7d6",
+      sunPosition: "-4 8 3",
+      fillIntensity: 0.42,
+      fillColor: "#60a5fa",
+      fillPosition: "4 4 -4",
+      orbPosition: "-20 15 -96",
+      orbInnerRadius: 2.9,
+      orbOuterRadius: 5.1,
+      orbInnerColor: "#fff8cf",
+      orbOuterColor: "#93c5fd",
+      showStars: false,
+      starCoreColor: "#ffffff",
+      starSparkColor: "#dbeafe",
+      starGlowColor: "#93c5fd",
+      cloudTint: "#ffffff",
+      cloudGlow: "#93c5fd",
+      cloudOpacity: 0.86,
+      paperAccents: ["#7dd3fc", "#c4b5fd", "#f9a8d4"],
+      fixedIslandPalette: {
+        topColor: "#92d76f",
+        sideColor: "#6f654f",
+        rockColor: "#dbeafe",
+        accentColor: "#60a5fa"
+      }
+    };
+  },
+
   createCelestialBody(options) {
     const root = this.createElement("a-entity", this.environmentRoot, {
       position: options.position
@@ -910,6 +1180,162 @@ const GameManager = {
       position: "0.2 0.46 -0.28",
       material: `color: ${palette.accentColor}; emissive: ${palette.accentColor}; emissiveIntensity: 0.35; roughness: 0.5`
     });
+
+    return root;
+  },
+
+  buildEndlessSceneryLoop() {
+    const playerZ = this.rigEl ? this.rigEl.object3D.position.z : 0;
+
+    this.endlessScenery = Array.from({ length: 10 }, () => {
+      const root = this.createFloatingIsland(
+        this.environmentRoot,
+        { x: 0, y: -3.5, z: playerZ - 90, scale: 1.8 },
+        {
+          topColor: "#92d76f",
+          sideColor: "#6f654f",
+          rockColor: "#dbeafe",
+          accentColor: "#60a5fa"
+        }
+      );
+
+      return {
+        el: root,
+        topEl: root.children[0],
+        sideEl: root.children[1],
+        rockAEl: root.children[2],
+        rockBEl: root.children[3],
+        accentEl: root.children[4]
+      };
+    });
+
+    this.resetEndlessSceneryLayout();
+  },
+
+  resetEndlessSceneryLayout() {
+    const playerZ = this.rigEl ? this.rigEl.object3D.position.z : 0;
+    this.endlessSceneryNextZ = playerZ - 90;
+
+    this.endlessScenery.forEach((item) => {
+      this.recycleEndlessSceneryItem(item, playerZ, true);
+    });
+  },
+
+  updateEndlessScenery() {
+    if (this.state !== this.STATES.ENDLESS || !this.endlessScenery.length) {
+      return;
+    }
+
+    const playerZ = this.rigEl.object3D.position.z;
+
+    this.endlessScenery.forEach((item) => {
+      const itemPosition = item.el.object3D.position;
+
+      if (itemPosition.z > playerZ + 30) {
+        this.recycleEndlessSceneryItem(item, playerZ, false);
+      }
+    });
+  },
+
+  recycleEndlessSceneryItem(item, playerZ, forceAhead) {
+    if (forceAhead || this.endlessSceneryNextZ > playerZ - 80) {
+      this.endlessSceneryNextZ = playerZ - this.randomRange(80, 140);
+    }
+
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const x = side * this.randomRange(14, 28);
+    const y = this.randomRange(-5.2, -1.1);
+    const z = this.endlessSceneryNextZ;
+    const scaleXz = this.randomRange(1.4, 2.8);
+    const scaleY = scaleXz * this.randomRange(0.9, 1.18);
+    const palette = this.getEndlessSceneryPalette();
+
+    item.el.setAttribute("position", `${x} ${y} ${z}`);
+    item.el.setAttribute("scale", `${scaleXz} ${scaleY} ${scaleXz}`);
+    item.el.setAttribute("float-drift", `xAmp: 0.45; yAmp: 0.25; zAmp: 0.3; speed: 0.16; phase: ${(x + z) * 0.01}`);
+
+    if (item.el.components["float-drift"] && item.el.components["float-drift"].basePosition) {
+      item.el.components["float-drift"].basePosition.set(x, y, z);
+    }
+
+    item.topEl.setAttribute("material", `color: ${palette.topColor}; roughness: 0.92; metalness: 0.02`);
+    item.sideEl.setAttribute("material", `color: ${palette.sideColor}; roughness: 0.96; metalness: 0.0`);
+    item.rockAEl.setAttribute("material", `color: ${palette.rockColor}; roughness: 0.88; metalness: 0.04`);
+    item.rockBEl.setAttribute("material", `color: ${palette.rockColor}; roughness: 0.88; metalness: 0.04`);
+    item.accentEl.setAttribute("material", `color: ${palette.accentColor}; emissive: ${palette.accentColor}; emissiveIntensity: 0.35; roughness: 0.5`);
+
+    this.endlessSceneryNextZ -= this.randomRange(24, 38);
+  },
+
+  getEndlessSceneryPalette() {
+    let palettes;
+
+    if (this.endlessTheme === "Sunset") {
+      palettes = [
+        {
+          topColor: "#f7c46b",
+          sideColor: "#8f5b48",
+          rockColor: "#fde7d8",
+          accentColor: "#fb7185"
+        },
+        {
+          topColor: "#f4b36b",
+          sideColor: "#7a534d",
+          rockColor: "#fce7f3",
+          accentColor: "#c084fc"
+        },
+        {
+          topColor: "#f7bb7d",
+          sideColor: "#8c6246",
+          rockColor: "#fde68a",
+          accentColor: "#f97316"
+        }
+      ];
+    } else if (this.endlessTheme === "Night") {
+      palettes = [
+        {
+          topColor: "#6c4ea3",
+          sideColor: "#2c234f",
+          rockColor: "#c4b5fd",
+          accentColor: "#f472b6"
+        },
+        {
+          topColor: "#5a4b91",
+          sideColor: "#223056",
+          rockColor: "#bfdbfe",
+          accentColor: "#93c5fd"
+        },
+        {
+          topColor: "#5b4d86",
+          sideColor: "#312450",
+          rockColor: "#ddd6fe",
+          accentColor: "#7dd3fc"
+        }
+      ];
+    } else {
+      palettes = [
+        {
+          topColor: "#92d76f",
+          sideColor: "#6f654f",
+          rockColor: "#dbeafe",
+          accentColor: "#60a5fa"
+        },
+        {
+          topColor: "#7fcf86",
+          sideColor: "#5f6b55",
+          rockColor: "#cbd5e1",
+          accentColor: "#7dd3fc"
+        },
+        {
+          topColor: "#9bd07a",
+          sideColor: "#71624a",
+          rockColor: "#bfdbfe",
+          accentColor: "#93c5fd"
+        }
+      ];
+    }
+
+    return palettes[Math.floor(Math.random() * palettes.length)];
   },
 
   createCheckpointGate(gateData, type) {
@@ -1065,50 +1491,7 @@ const GameManager = {
   },
 
   buildSplashUI() {
-    this.createUiCloudDecor(this.splashUI, {
-      position: "-1.6 0.9 -0.1",
-      scale: 0.85,
-      opacity: 0.24,
-      color: "#ffffff"
-    });
-    this.createUiCloudDecor(this.splashUI, {
-      position: "1.55 -0.75 -0.1",
-      scale: 0.78,
-      opacity: 0.2,
-      color: "#e0f2fe"
-    });
-    this.createUiPaperPlaneDecor(this.splashUI, {
-      position: "1.25 0.98 -0.08",
-      rotation: "0 0 -18",
-      scale: 0.72,
-      accentColor: "#7dd3fc"
-    });
-    this.createUiPaperPlaneDecor(this.splashUI, {
-      position: "-1.18 -0.88 -0.08",
-      rotation: "0 0 22",
-      scale: 0.58,
-      accentColor: "#c4b5fd"
-    });
-
-    const panel = this.createPanel(this.splashUI, 2.92, 2.22, "#07263b", 0.9);
-
-    this.createText(panel, "Sky Ring Flyer", "0 0.82 0.02", 2.5, "#f8fafc", 48);
-    this.createText(panel, "Fly your paper plane through the clouds", "0 0.5 0.02", 2.45, "#bae6fd", 30);
-    this.createText(panel, `Student: ${this.STUDENT_INFO.name}`, "0 0.14 0.02", 2.28, "#ffffff", 26);
-    this.createText(panel, `ID: ${this.STUDENT_INFO.id}`, "0 -0.1 0.02", 2.28, "#ffffff", 26);
-    this.createText(panel, this.STUDENT_INFO.course, "0 -0.34 0.02", 2.35, "#cbd5e1", 24);
-    this.createText(panel, "A whimsical stereoscopic VR sky run", "0 -0.62 0.02", 2.32, "#93c5fd", 24);
-
-    this.createButton(panel, {
-      id: "splashContinueButton",
-      label: "Continue",
-      action: "continue",
-      width: 1.24,
-      height: 0.28,
-      position: "0 -0.94 0.03",
-      color: "#0284c7",
-      hoverColor: "#0ea5e9"
-    });
+    // Splash presentation is now handled by the HTML/CSS overlay for cleaner layout.
   },
 
   buildMenuUI() {
@@ -1137,12 +1520,18 @@ const GameManager = {
       accentColor: "#f9a8d4"
     });
 
-    const panel = this.createPanel(this.menuUI, 3.02, 3.48, "#07263b", 0.9);
+    const panel = this.createPanel(this.menuUI, 3.02, 4.9, "#07263b", 0.76, {
+      overlayColor: "#061221",
+      overlayOpacity: 0.44,
+      innerOverlayColor: "#08192a",
+      innerOverlayOpacity: 0.22,
+      accentOpacity: 0.22
+    });
 
-    this.createText(panel, "Paper Flight Setup", "0 1.18 0.02", 2.52, "#f8fafc", 42);
-    this.createText(panel, "Tune your sky run before takeoff.", "0 0.88 0.02", 2.45, "#bae6fd", 26);
-    this.createText(panel, "Use gaze or mouse click to select an option.", "0 0.62 0.02", 2.42, "#bfdbfe", 24);
-    this.createText(panel, "Tap the goggles icon on mobile for stereoscopic VR.", "0 0.34 0.02", 2.45, "#7dd3fc", 22);
+    this.createText(panel, "Paper Flight Setup", "0 1.38 0.02", 2.52, "#f8fafc", 42);
+    this.createText(panel, "Tune your sky run before takeoff.", "0 1.08 0.02", 2.45, "#bae6fd", 26);
+    this.createText(panel, "Use gaze or mouse click to select an option.", "0 0.8 0.02", 2.42, "#bfdbfe", 24);
+    this.createText(panel, "Tap the goggles icon on mobile for stereoscopic VR.", "0 0.54 0.02", 2.45, "#7dd3fc", 22);
 
     this.menuMusicButton = this.createButton(panel, {
       id: "musicButton",
@@ -1150,7 +1539,7 @@ const GameManager = {
       action: "toggle-music",
       width: 1.82,
       height: 0.28,
-      position: "0 -0.12 0.03",
+      position: "0 -0.04 0.03",
       color: "#0f4c5c",
       hoverColor: "#0f766e"
     });
@@ -1161,24 +1550,46 @@ const GameManager = {
       action: "toggle-difficulty",
       width: 1.82,
       height: 0.28,
-      position: "0 -0.62 0.03",
+      position: "0 -0.5 0.03",
       color: "#3b1d6e",
       hoverColor: "#5b21b6"
     });
 
-    this.startGameButton = this.createButton(panel, {
-      id: "startButton",
-      label: "Start Game",
-      action: "start-game",
+    this.menuEndlessThemeButton = this.createButton(panel, {
+      id: "endlessThemeButton",
+      label: "Endless Theme: Day",
+      action: "toggle-endless-theme",
+      width: 1.82,
+      height: 0.28,
+      position: "0 -0.96 0.03",
+      color: "#7c2d12",
+      hoverColor: "#ea580c"
+    });
+
+    this.storyModeButton = this.createButton(panel, {
+      id: "storyModeButton",
+      label: "Story Mode",
+      action: "start-story",
       width: 1.82,
       height: 0.3,
-      position: "0 -1.12 0.03",
+      position: "0 -1.42 0.03",
       color: "#0f4c5c",
       hoverColor: "#0f766e"
     });
 
-    this.createText(panel, "Rings score points. Clouds cost lives.", "0 -1.48 0.02", 2.42, "#dbeafe", 22);
-    this.createText(panel, "Glide cleanly from the start gate to the finish gate.", "0 -1.68 0.02", 2.5, "#c4b5fd", 22);
+    this.endlessModeButton = this.createButton(panel, {
+      id: "endlessModeButton",
+      label: "Endless Mode",
+      action: "start-endless",
+      width: 1.82,
+      height: 0.3,
+      position: "0 -1.88 0.03",
+      color: "#5b21b6",
+      hoverColor: "#7c3aed"
+    });
+
+    this.createText(panel, "Story Mode flies through Levels 1 to 3.", "0 -2.26 0.02", 2.44, "#dbeafe", 22);
+    this.createText(panel, "Endless Mode is an arcade sky run with infinite rings.", "0 -2.48 0.02", 2.56, "#c4b5fd", 22);
   },
 
   buildHudUI() {
@@ -1275,9 +1686,68 @@ const GameManager = {
 
   bindPersistentListeners() {
     this.sceneEl.addEventListener("loaded", () => {
+      this.sceneEl.removeAttribute("background");
+
+      if (this.sceneEl.object3D) {
+        this.sceneEl.object3D.background = null;
+      }
+
+      if (this.sceneEl.renderer) {
+        this.sceneEl.renderer.setClearColor(new THREE.Color("#000000"), 0);
+      }
+
       this.updateCursorMode();
       this.refreshCursorTargets();
+      this.updateSceneBackdropMode();
     }, { once: true });
+
+    if (this.htmlSplashContinueButton) {
+      this.htmlSplashContinueButton.addEventListener("click", () => {
+        if (this.state === this.STATES.SPLASH) {
+          this.handleAction("continue");
+        }
+      });
+    }
+
+    if (this.htmlMenuMusicButton) {
+      this.htmlMenuMusicButton.addEventListener("click", () => {
+        if (this.state === this.STATES.MENU) {
+          this.handleAction("toggle-music");
+        }
+      });
+    }
+
+    if (this.htmlMenuDifficultyButton) {
+      this.htmlMenuDifficultyButton.addEventListener("click", () => {
+        if (this.state === this.STATES.MENU) {
+          this.handleAction("toggle-difficulty");
+        }
+      });
+    }
+
+    if (this.htmlMenuThemeButton) {
+      this.htmlMenuThemeButton.addEventListener("click", () => {
+        if (this.state === this.STATES.MENU) {
+          this.handleAction("toggle-endless-theme");
+        }
+      });
+    }
+
+    if (this.htmlStoryModeButton) {
+      this.htmlStoryModeButton.addEventListener("click", () => {
+        if (this.state === this.STATES.MENU) {
+          this.handleAction("start-story");
+        }
+      });
+    }
+
+    if (this.htmlEndlessModeButton) {
+      this.htmlEndlessModeButton.addEventListener("click", () => {
+        if (this.state === this.STATES.MENU) {
+          this.handleAction("start-endless");
+        }
+      });
+    }
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.isGameplayState()) {
@@ -1321,13 +1791,25 @@ const GameManager = {
       case "toggle-difficulty":
         this.toggleDifficulty();
         break;
+      case "toggle-endless-theme":
+        this.toggleEndlessTheme();
+        break;
+      case "start-story":
       case "start-game":
-        console.log("[Sky Ring Flyer] Start Game clicked");
-        this.startNewGame();
+        console.log("[Sky Ring Flyer] Story Mode clicked");
+        this.startStoryGame();
+        break;
+      case "start-endless":
+        console.log("[Sky Ring Flyer] Endless button clicked");
+        this.startEndlessGame();
         break;
       case "restart-game":
         console.log("[Sky Ring Flyer] Restart Game clicked");
-        this.startNewGame();
+        if (this.gameMode === this.GAME_MODES.ENDLESS) {
+          this.startEndlessGame();
+        } else {
+          this.startStoryGame();
+        }
         break;
       case "toggle-pause":
         if (this.state === this.STATES.PAUSED) {
@@ -1353,6 +1835,9 @@ const GameManager = {
         return this.state === this.STATES.SPLASH;
       case "toggle-music":
       case "toggle-difficulty":
+      case "toggle-endless-theme":
+      case "start-story":
+      case "start-endless":
       case "start-game":
         return this.state === this.STATES.MENU;
       case "restart-game":
@@ -1376,6 +1861,8 @@ const GameManager = {
     this.state = nextState;
     console.log("[Sky Ring Flyer] Current game state:", this.state);
     this.applyUIVisibility();
+    this.updateHtmlSplashVisibility();
+    this.updateSceneBackdropMode();
     this.refreshCursorTargets();
 
     if (this.state === this.STATES.MENU) {
@@ -1389,9 +1876,10 @@ const GameManager = {
 
   applyUIVisibility() {
     const gameplayVisible = this.isGameplayState();
+    const menuVrVisible = this.state === this.STATES.MENU && this.sceneEl && this.sceneEl.is("vr-mode");
     const visibility = {
-      splashUI: this.state === this.STATES.SPLASH,
-      menuUI: this.state === this.STATES.MENU,
+      splashUI: false,
+      menuUI: menuVrVisible,
       hudUI: gameplayVisible,
       pauseUI: this.state === this.STATES.PAUSED,
       winUI: this.state === this.STATES.WIN,
@@ -1405,6 +1893,57 @@ const GameManager = {
     });
 
     this.cockpitRoot.setAttribute("visible", gameplayVisible);
+  },
+
+  updateHtmlOverlayVisibility() {
+    const inVr = this.sceneEl && this.sceneEl.is("vr-mode");
+    const splashVisible = this.state === this.STATES.SPLASH && !inVr;
+    const menuVisible = this.state === this.STATES.MENU && !inVr;
+
+    document.body.classList.toggle("splash-active", splashVisible);
+    document.body.classList.toggle("menu-active", menuVisible);
+    document.body.classList.toggle("vr-mode", Boolean(inVr));
+
+    if (this.htmlSplashOverlay) {
+      this.htmlSplashOverlay.setAttribute("aria-hidden", splashVisible ? "false" : "true");
+    }
+
+    if (this.htmlMenuOverlay) {
+      this.htmlMenuOverlay.setAttribute("aria-hidden", menuVisible ? "false" : "true");
+    }
+  },
+
+  updateHtmlSplashVisibility() {
+    if (!this.htmlSplashOverlay && !this.htmlMenuOverlay) {
+      return;
+    }
+
+    this.updateHtmlOverlayVisibility();
+  },
+
+  updateSceneBackdropMode() {
+    const inVr = this.sceneEl && this.sceneEl.is("vr-mode");
+    const useHtmlBackdrop = this.state === this.STATES.SPLASH || (this.state === this.STATES.MENU && !inVr);
+
+    if (this.skyEl) {
+      this.skyEl.setAttribute("visible", !useHtmlBackdrop);
+    }
+
+    if (this.environmentRoot) {
+      this.environmentRoot.setAttribute("visible", !useHtmlBackdrop);
+    }
+
+    if (this.sceneEl) {
+      this.sceneEl.removeAttribute("background");
+
+      if (this.sceneEl.object3D) {
+        this.sceneEl.object3D.background = null;
+      }
+    }
+
+    if (this.sceneEl && this.sceneEl.renderer) {
+      this.sceneEl.renderer.setClearColor(new THREE.Color("#000000"), 0);
+    }
   },
 
   setButtonsEnabled(root, enabled) {
@@ -1442,11 +1981,21 @@ const GameManager = {
       this.vrCursorEl.setAttribute("raycaster", "enabled", inVr);
     }
 
+    this.applyUIVisibility();
+    this.updateHtmlOverlayVisibility();
     this.refreshCursorTargets();
   },
 
   toggleDifficulty() {
     this.difficulty = this.difficulty === "EASY" ? "HARD" : "EASY";
+    this.refreshMenu();
+  },
+
+  toggleEndlessTheme() {
+    const currentIndex = this.ENDLESS_THEMES.indexOf(this.endlessTheme);
+    const nextIndex = (currentIndex + 1) % this.ENDLESS_THEMES.length;
+    this.endlessTheme = this.ENDLESS_THEMES[nextIndex];
+    console.log("[Sky Ring Flyer] Endless Theme changed:", this.endlessTheme);
     this.refreshMenu();
   },
 
@@ -1463,6 +2012,11 @@ const GameManager = {
   },
 
   startNewGame() {
+    this.startStoryGame();
+  },
+
+  startStoryGame() {
+    this.gameMode = this.GAME_MODES.STORY;
     const difficultySettings = this.DIFFICULTY[this.difficulty];
     this.score = 0;
     this.levelNumber = 0;
@@ -1471,6 +2025,73 @@ const GameManager = {
     this.resolvedRings = 0;
     this.totalRings = 0;
     this.startLevel(1);
+  },
+
+  startEndlessGame() {
+    console.log("[Sky Ring Flyer] startEndlessGame called");
+    const difficultySettings = this.DIFFICULTY[this.difficulty];
+
+    this.clearScheduledActions();
+    this.clearWorld();
+
+    this.gameMode = this.GAME_MODES.ENDLESS;
+    this.score = 0;
+    this.levelNumber = 0;
+    this.lives = difficultySettings.lives;
+    this.collectedRings = 0;
+    this.resolvedRings = 0;
+    this.totalRings = 0;
+    this.transitionLocked = false;
+    this.playerHitCooldownUntil = 0;
+    this.debugLastLogTime = 0;
+    this.pausedFromState = null;
+    this.gameplayFrozen = false;
+
+    this.currentLevel = {
+      label: "ENDLESS",
+      state: this.STATES.ENDLESS,
+      baseSpeed: this.endlessBaseSpeed * difficultySettings.speedMultiplier,
+      speed: this.endlessBaseSpeed * difficultySettings.speedMultiplier,
+      lateralSpeed: this.endlessBaseLateralSpeed,
+      verticalSpeed: this.endlessBaseVerticalSpeed,
+      rings: [],
+      bonusRings: [],
+      obstacles: [],
+      spawnPoint: { x: 0, y: 2.3 }
+    };
+
+    this.rings = [];
+    this.bonusRings = [];
+    this.obstacles = [];
+    this.positionPlayerAtStart();
+    this.resetEndlessState();
+    this.applyEnvironment(`endless-${this.endlessTheme.toLowerCase()}`);
+    this.setState(this.STATES.ENDLESS);
+
+    console.log("[Sky Ring Flyer] gameState after click:", this.state);
+
+    this.splashUI.setAttribute("visible", false);
+    this.menuUI.setAttribute("visible", false);
+    this.hudUI.setAttribute("visible", true);
+    this.pauseUI.setAttribute("visible", false);
+    this.winUI.setAttribute("visible", false);
+    this.gameOverUI.setAttribute("visible", false);
+    this.cockpitRoot.setAttribute("visible", true);
+    console.log("[Sky Ring Flyer] menu hidden");
+    console.log("[Sky Ring Flyer] HUD shown");
+
+    const spawnedRingCount = this.ensureEnoughEndlessRings();
+    const spawnedObstacleCount = this.ensureEnoughEndlessObstacles();
+    this.logEndlessBatch(spawnedRingCount, spawnedObstacleCount);
+    console.log("[Sky Ring Flyer] initial endless content spawned", {
+      activeRingCount: this.rings.length,
+      activeObstacleCount: this.obstacles.length
+    });
+
+    this.refreshHud();
+    this.refreshCursorTargets();
+    console.log(`[Sky Ring Flyer] Endless Mode started with theme: ${this.endlessTheme}`);
+    console.log("[Sky Ring Flyer] Endless Mode started");
   },
 
   startLevel(levelNumber) {
@@ -1483,6 +2104,8 @@ const GameManager = {
 
     this.clearScheduledActions();
     this.clearWorld();
+    this.gameMode = this.GAME_MODES.STORY;
+    this.resetEndlessState();
 
     this.levelNumber = levelNumber;
     this.currentLevel = {
@@ -1527,6 +2150,217 @@ const GameManager = {
     }
 
     this.logStartAlignment();
+  },
+
+  resetEndlessState() {
+    const playerPosition = this.rigEl ? this.rigEl.object3D.position : { x: 0, y: 2.3, z: 0 };
+    this.endlessNextZ = playerPosition.z - 20;
+    this.endlessLastRingX = playerPosition.x;
+    this.endlessLastRingY = playerPosition.y;
+    this.endlessRingSerial = 0;
+    this.endlessObstacleSerial = 0;
+    this.endlessElapsed = 0;
+    this.endlessLastHudLogAt = 0;
+  },
+
+  updateEndlessMode(time, deltaSeconds) {
+    if (this.state !== this.STATES.ENDLESS || !this.currentLevel) {
+      return null;
+    }
+
+    this.endlessElapsed += deltaSeconds;
+    this.currentLevel.speed = this.currentLevel.baseSpeed + Math.min(
+      this.endlessMaxSpeedBoost,
+      this.endlessElapsed * this.endlessSpeedRampPerSecond
+    );
+
+    const direction = this.updatePlayerMotion(deltaSeconds);
+    this.updateMovingObstacles(time / 1000);
+    this.updateEndlessScenery();
+    this.processRingChecks();
+    this.processObstacleChecks(time);
+    this.cleanupEndlessEntities();
+
+    const spawnedRingCount = this.ensureEnoughEndlessRings();
+    const spawnedObstacleCount = this.ensureEnoughEndlessObstacles();
+
+    if (spawnedRingCount > 0 || spawnedObstacleCount > 0) {
+      this.logEndlessBatch(spawnedRingCount, spawnedObstacleCount);
+    }
+
+    this.refreshHud();
+    this.debugFlightState(time, direction);
+    return direction;
+  },
+
+  countEndlessRingsAhead(playerZ) {
+    return this.rings.filter((ring) => !ring.removed && !ring.resolved && ring.z < playerZ).length;
+  },
+
+  countEndlessObstaclesAhead(playerZ) {
+    return this.obstacles.filter((obstacle) => !obstacle.removed && obstacle.z < playerZ).length;
+  },
+
+  ensureEnoughEndlessRings() {
+    const playerZ = this.rigEl.object3D.position.z;
+    let upcomingCount = this.countEndlessRingsAhead(playerZ);
+    let spawnedCount = 0;
+    let safetyCounter = 0;
+
+    while (upcomingCount < this.endlessUpcomingTarget && safetyCounter < 40) {
+      this.spawnEndlessRing();
+      upcomingCount = this.countEndlessRingsAhead(playerZ);
+      spawnedCount += 1;
+      safetyCounter += 1;
+    }
+
+    return spawnedCount;
+  },
+
+  ensureEnoughEndlessObstacles() {
+    const playerZ = this.rigEl.object3D.position.z;
+    let upcomingCount = this.countEndlessObstaclesAhead(playerZ);
+    let spawnedCount = 0;
+    let safetyCounter = 0;
+
+    while (upcomingCount < this.endlessObstacleTarget && safetyCounter < 30) {
+      this.spawnEndlessObstacle();
+      upcomingCount = this.countEndlessObstaclesAhead(playerZ);
+      spawnedCount += 1;
+      safetyCounter += 1;
+    }
+
+    return spawnedCount;
+  },
+
+  spawnEndlessRing() {
+    const x = THREE.MathUtils.clamp(
+      this.endlessLastRingX + (Math.random() - 0.5) * 2.4,
+      this.bounds.xMin + 1.25,
+      this.bounds.xMax - 1.25
+    );
+    const y = THREE.MathUtils.clamp(
+      this.endlessLastRingY + (Math.random() - 0.5) * 1.15,
+      this.bounds.yMin + 0.45,
+      this.bounds.yMax - 0.45
+    );
+    const z = this.endlessNextZ;
+
+    this.endlessRingSerial += 1;
+    this.rings.push(this.createRingEntity({ x, y, z }, false, `endless-${this.endlessRingSerial}`));
+
+    if (this.endlessRingSerial % 4 === 0) {
+      const bonusSide = Math.random() < 0.5 ? -1 : 1;
+      const bonusX = THREE.MathUtils.clamp(
+        x + bonusSide * (1.15 + Math.random() * 0.5),
+        this.bounds.xMin + 1.0,
+        this.bounds.xMax - 1.0
+      );
+      const bonusY = THREE.MathUtils.clamp(
+        y + (Math.random() - 0.5) * 0.75,
+        this.bounds.yMin + 0.35,
+        this.bounds.yMax - 0.35
+      );
+
+      this.endlessRingSerial += 1;
+      this.bonusRings.push(this.createRingEntity({ x: bonusX, y: bonusY, z: z - 4.5 }, true, `endless-${this.endlessRingSerial}`));
+    }
+
+    this.endlessLastRingX = x;
+    this.endlessLastRingY = y;
+    this.endlessNextZ -= this.randomRange(this.endlessRingGapMin, this.endlessRingGapMax);
+  },
+
+  spawnEndlessObstacle() {
+    const playerZ = this.rigEl.object3D.position.z;
+    const futureRings = this.rings.filter((ring) => !ring.removed && !ring.resolved && ring.z < playerZ);
+    const anchorRing = futureRings.length > 0
+      ? futureRings[Math.floor(Math.random() * futureRings.length)]
+      : { x: this.endlessLastRingX, y: this.endlessLastRingY, z: this.endlessNextZ - 4 };
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const z = Math.min(anchorRing.z + this.randomRange(2.5, 5.5), playerZ - 8);
+    const obstacleData = {
+      x: THREE.MathUtils.clamp(
+        anchorRing.x + side * this.randomRange(1.6, 2.5),
+        this.bounds.xMin + 1.0,
+        this.bounds.xMax - 1.0
+      ),
+      y: THREE.MathUtils.clamp(
+        anchorRing.y + this.randomRange(-0.7, 0.7),
+        this.bounds.yMin + 0.35,
+        this.bounds.yMax - 0.35
+      ),
+      z,
+      radius: this.randomRange(1.05, 1.28),
+      motion: {
+        axis: Math.random() < 0.5 ? "x" : "y",
+        amplitude: this.randomRange(0.45, 0.95),
+        speed: this.randomRange(1.1, 1.9),
+        phase: Math.random() * Math.PI * 2
+      }
+    };
+
+    this.endlessObstacleSerial += 1;
+    this.obstacles.push(this.createCloudEntity(obstacleData, `endless-${this.endlessObstacleSerial}`));
+  },
+
+  cleanupEndlessEntities() {
+    const playerZ = this.rigEl.object3D.position.z;
+    const behindThreshold = playerZ + this.endlessBehindDistance;
+
+    this.rings.forEach((ring) => {
+      if (ring.removed) {
+        return;
+      }
+
+      if (ring.z > behindThreshold) {
+        ring.resolved = true;
+        ring.missed = true;
+        this.removeRingEntity(ring);
+      }
+    });
+
+    this.bonusRings.forEach((ring) => {
+      if (ring.removed) {
+        return;
+      }
+
+      if (ring.z > behindThreshold) {
+        ring.resolved = true;
+        ring.missed = true;
+        this.removeRingEntity(ring);
+      }
+    });
+
+    this.obstacles.forEach((obstacle) => {
+      if (obstacle.removed) {
+        return;
+      }
+
+      const obstacleZ = obstacle.el.object3D.position.z;
+      if (obstacleZ > behindThreshold) {
+        obstacle.removed = true;
+        this.destroyEntity(obstacle.el);
+      }
+    });
+
+    this.rings = this.rings.filter((ring) => !ring.removed);
+    this.bonusRings = this.bonusRings.filter((ring) => !ring.removed);
+    this.obstacles = this.obstacles.filter((obstacle) => !obstacle.removed);
+  },
+
+  logEndlessBatch(spawnedRingCount, spawnedObstacleCount) {
+    console.log("[Sky Ring Flyer] New batch spawned", {
+      spawnedRingCount,
+      spawnedObstacleCount,
+      currentActiveRingCount: this.rings.length,
+      currentActiveObstacleCount: this.obstacles.length,
+      endlessNextZ: Number(this.endlessNextZ.toFixed(2))
+    });
+  },
+
+  randomRange(min, max) {
+    return min + Math.random() * (max - min);
   },
 
   buildLevelEntities() {
@@ -1627,8 +2461,10 @@ const GameManager = {
   goToMenu() {
     this.clearScheduledActions();
     this.clearWorld();
+    this.resetEndlessState();
     this.currentLevel = null;
     this.levelNumber = 0;
+    this.gameMode = this.GAME_MODES.STORY;
     this.pausedFromState = null;
     this.transitionLocked = false;
     this.gameplayFrozen = true;
@@ -1659,7 +2495,7 @@ const GameManager = {
   },
 
   isGameplayState() {
-    return this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2 || this.state === this.STATES.LEVEL_3;
+    return this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2 || this.state === this.STATES.LEVEL_3 || this.state === this.STATES.ENDLESS;
   },
 
   tick(time, delta) {
@@ -1668,6 +2504,12 @@ const GameManager = {
     }
 
     const deltaSeconds = Math.min(delta, 50) / 1000;
+
+    if (this.state === this.STATES.ENDLESS) {
+      this.updateEndlessMode(time, deltaSeconds);
+      return;
+    }
+
     const direction = this.updatePlayerMotion(deltaSeconds);
     this.updateMovingObstacles(time / 1000);
     this.processRingChecks();
@@ -2012,10 +2854,14 @@ const GameManager = {
         this.destroyEntity(obstacle.el);
       }
     });
+
+    this.rings = this.rings.filter((ring) => !ring.removed);
+    this.bonusRings = this.bonusRings.filter((ring) => !ring.removed);
+    this.obstacles = this.obstacles.filter((obstacle) => !obstacle.removed);
   },
 
   checkLevelCompletion() {
-    if (!this.currentLevel || this.transitionLocked) {
+    if (!this.currentLevel || this.transitionLocked || this.gameMode === this.GAME_MODES.ENDLESS) {
       return;
     }
 
@@ -2074,10 +2920,10 @@ const GameManager = {
     console.log("[Sky Ring Flyer] Win triggered");
     this.setText(
       this.winSummaryText,
-      `Score ${this.score}\nHigh Score ${this.highScore}\nDifficulty ${this.difficulty}`,
+      this.buildEndScreenSummary(),
       2.15,
       "#ffffff",
-      24
+      20
     );
     this.setState(this.STATES.WIN);
   },
@@ -2096,10 +2942,10 @@ const GameManager = {
     console.log("[Sky Ring Flyer] Game over triggered");
     this.setText(
       this.gameOverSummaryText,
-      `Score ${this.score}\nHigh Score ${this.highScore}\nDifficulty ${this.difficulty}`,
+      this.buildEndScreenSummary(),
       2.15,
       "#ffffff",
-      24
+      20
     );
     this.setState(this.STATES.GAME_OVER);
   },
@@ -2121,11 +2967,18 @@ const GameManager = {
     }
   },
 
+  buildEndScreenSummary() {
+    const modeLabel = this.gameMode === this.GAME_MODES.ENDLESS ? "Endless" : "Story";
+    return `Mode ${modeLabel}\nScore ${this.score}\nRings ${this.collectedRings}\nHigh Score ${this.highScore}\nDifficulty ${this.difficulty}`;
+  },
+
   positionPlayerAtStart() {
     const position = this.rigEl.object3D.position;
-    const startLane = this.currentLevel && this.currentLevel.startGate
+    const startLane = this.currentLevel && this.currentLevel.spawnPoint
+      ? this.currentLevel.spawnPoint
+      : this.currentLevel && this.currentLevel.startGate
       ? this.currentLevel.startGate
-      : this.currentLevel && this.currentLevel.rings.length > 0
+      : this.currentLevel && this.currentLevel.rings && this.currentLevel.rings.length > 0
         ? this.currentLevel.rings[0]
         : { x: 0, y: 2.2 };
 
@@ -2203,8 +3056,24 @@ const GameManager = {
       this.setButtonLabel(this.menuMusicButton, `Music: ${this.musicEnabled ? "ON" : "OFF"}`);
     }
 
+    if (this.htmlMenuMusicButton) {
+      this.htmlMenuMusicButton.textContent = `Music: ${this.musicEnabled ? "ON" : "OFF"}`;
+    }
+
     if (this.menuDifficultyButton) {
       this.setButtonLabel(this.menuDifficultyButton, `Difficulty: ${this.DIFFICULTY[this.difficulty].label}`);
+    }
+
+    if (this.htmlMenuDifficultyButton) {
+      this.htmlMenuDifficultyButton.textContent = `Difficulty: ${this.DIFFICULTY[this.difficulty].label}`;
+    }
+
+    if (this.menuEndlessThemeButton) {
+      this.setButtonLabel(this.menuEndlessThemeButton, `Endless Theme: ${this.endlessTheme}`);
+    }
+
+    if (this.htmlMenuThemeButton) {
+      this.htmlMenuThemeButton.textContent = `Endless Theme: ${this.endlessTheme}`;
     }
   },
 
@@ -2213,10 +3082,29 @@ const GameManager = {
       return;
     }
 
+    const levelText = this.gameMode === this.GAME_MODES.ENDLESS
+      ? "Mode\nEndless"
+      : `Level\n${this.levelNumber || "-"}`;
+    const ringsText = this.gameMode === this.GAME_MODES.ENDLESS
+      ? `Rings\n${this.collectedRings}`
+      : `Rings\n${this.collectedRings}/${this.totalRings}`;
+
     this.setText(this.hudRefs.score, `Score\n${this.score}`, 0.58, "#ffffff", 18);
     this.setText(this.hudRefs.lives, `Lives\n${this.lives}`, 0.58, "#ffffff", 18);
-    this.setText(this.hudRefs.level, `Level\n${this.levelNumber || "-"}`, 0.58, "#93c5fd", 18);
-    this.setText(this.hudRefs.rings, `Rings\n${this.collectedRings}/${this.totalRings}`, 0.72, "#fef3c7", 18);
+    this.setText(this.hudRefs.level, levelText, 0.62, "#93c5fd", 18);
+    this.setText(this.hudRefs.rings, ringsText, 0.72, "#fef3c7", 18);
+
+    const hudLogTime = typeof performance !== "undefined" ? performance.now() : Date.now();
+
+    if (this.gameMode === this.GAME_MODES.ENDLESS && hudLogTime - this.endlessLastHudLogAt > 800) {
+      this.endlessLastHudLogAt = hudLogTime;
+      console.log("[Sky Ring Flyer] HUD updated in Endless Mode", {
+        score: this.score,
+        lives: this.lives,
+        ringsPassed: this.collectedRings,
+        highScore: this.highScore
+      });
+    }
   },
 
   ensureAudioReady() {
@@ -2381,8 +3269,14 @@ const GameManager = {
     }
   },
 
-  createPanel(parent, width, height, color = "#061525", opacity = 0.9) {
+  createPanel(parent, width, height, color = "#061525", opacity = 0.9, options = {}) {
     const panel = this.createElement("a-entity", parent, {});
+
+    const accentOpacity = options.accentOpacity ?? 0.24;
+    const overlayColor = options.overlayColor || color;
+    const overlayOpacity = options.overlayOpacity ?? opacity;
+    const innerOverlayColor = options.innerOverlayColor || "#0c2538";
+    const innerOverlayOpacity = options.innerOverlayOpacity ?? 0.28;
 
     this.createElement("a-plane", panel, {
       width: width + 0.12,
@@ -2393,21 +3287,30 @@ const GameManager = {
     this.createElement("a-plane", panel, {
       width,
       height,
-      material: `color: ${color}; opacity: ${opacity}; shader: flat`
+      material: options.backgroundSrc
+        ? `src: ${options.backgroundSrc}; opacity: ${options.backgroundOpacity ?? 1}; transparent: true`
+        : `color: ${color}; opacity: ${opacity}; shader: flat`
+    });
+
+    this.createElement("a-plane", panel, {
+      width,
+      height,
+      position: "0 0 0.005",
+      material: `color: ${overlayColor}; opacity: ${overlayOpacity}; transparent: true; shader: flat`
     });
 
     this.createElement("a-plane", panel, {
       width: width - 0.08,
       height: height - 0.08,
       position: "0 0 0.01",
-      material: "color: #0c2538; opacity: 0.28; shader: flat"
+      material: `color: ${innerOverlayColor}; opacity: ${innerOverlayOpacity}; transparent: true; shader: flat`
     });
 
     this.createElement("a-plane", panel, {
       width: width - 0.16,
       height: 0.06,
       position: `0 ${height / 2 - 0.18} 0.02`,
-      material: "color: #7dd3fc; opacity: 0.24; transparent: true; shader: flat"
+      material: `color: #7dd3fc; opacity: ${accentOpacity}; transparent: true; shader: flat`
     });
 
     return panel;
@@ -2417,6 +3320,47 @@ const GameManager = {
     const textEl = this.createElement("a-entity", parent, { position });
     this.setText(textEl, value, width, color, wrapCount);
     return textEl;
+  },
+
+  createShadowText(parent, value, position, width, color, wrapCount, options = {}) {
+    const root = this.createElement("a-entity", parent, { position });
+
+    if (options.glowWidth && options.glowHeight) {
+      this.createElement("a-plane", root, {
+        width: options.glowWidth,
+        height: options.glowHeight,
+        position: `0 0 ${options.glowZ ?? -0.02}`,
+        material: `color: ${options.glowColor || "#04111c"}; opacity: ${options.glowOpacity ?? 0.08}; transparent: true; shader: flat`
+      });
+    }
+
+    if (options.stripWidth && options.stripHeight) {
+      this.createElement("a-plane", root, {
+        width: options.stripWidth,
+        height: options.stripHeight,
+        position: `0 0 ${options.stripZ ?? -0.01}`,
+        material: `color: ${options.stripColor || "#082032"}; opacity: ${options.stripOpacity ?? 0.16}; transparent: true; shader: flat`
+      });
+    }
+
+    const shadowEl = this.createElement("a-entity", root, {
+      position: `${options.shadowX ?? 0.012} ${options.shadowY ?? -0.012} -0.01`
+    });
+    this.setText(shadowEl, value, width, options.shadowColor || "#031120", wrapCount, options.align || "center");
+
+    if (options.secondaryShadowColor) {
+      const secondaryShadowEl = this.createElement("a-entity", root, {
+        position: `${options.secondaryShadowX ?? 0.02} ${options.secondaryShadowY ?? -0.02} -0.015`
+      });
+      this.setText(secondaryShadowEl, value, width, options.secondaryShadowColor, wrapCount, options.align || "center");
+    }
+
+    const textEl = this.createElement("a-entity", root, {
+      position: "0 0 0"
+    });
+    this.setText(textEl, value, width, color, wrapCount, options.align || "center");
+
+    return root;
   },
 
   createButton(parent, options) {
@@ -2475,7 +3419,13 @@ const GameManager = {
 
       button._activationLocked = true;
       console.log("[Sky Ring Flyer] Button clicked:", button.id || button._action);
-      this.handleAction(button._action);
+
+      if (button._action === "start-endless") {
+        console.log("[Sky Ring Flyer] Endless button clicked");
+        this.startEndlessGame();
+      } else {
+        this.handleAction(button._action);
+      }
 
       window.setTimeout(() => {
         button._activationLocked = false;
