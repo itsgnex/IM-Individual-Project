@@ -8,61 +8,6 @@ AFRAME.registerComponent("game-loop", {
   }
 });
 
-AFRAME.registerComponent("menu-button", {
-  schema: {
-    action: { type: "string" },
-    baseColor: { type: "color", default: "#14314d" },
-    hoverColor: { type: "color", default: "#1d5f8c" }
-  },
-
-  init() {
-    this.activationLocked = false;
-
-    this.triggerAction = () => {
-      if (this.activationLocked) {
-        return;
-      }
-
-      this.activationLocked = true;
-
-      if (window.GameManager) {
-        window.GameManager.handleAction(this.data.action);
-      }
-
-      window.setTimeout(() => {
-        this.activationLocked = false;
-      }, 250);
-    };
-
-    this.onEnter = () => {
-      const buttonRoot = this.el._buttonRootEl || this.el;
-      buttonRoot.object3D.scale.set(1.03, 1.03, 1.03);
-      this.el.setAttribute("material", "color", this.data.hoverColor);
-    };
-
-    this.onLeave = () => {
-      const buttonRoot = this.el._buttonRootEl || this.el;
-      buttonRoot.object3D.scale.set(1, 1, 1);
-      this.el.setAttribute("material", "color", this.data.baseColor);
-    };
-
-    this.onClick = () => {
-      console.log("[Sky Ring Flyer] Button clicked:", this.el.id || this.data.action);
-      this.triggerAction();
-    };
-
-    this.el.addEventListener("mouseenter", this.onEnter);
-    this.el.addEventListener("mouseleave", this.onLeave);
-    this.el.addEventListener("click", this.onClick);
-  },
-
-  remove() {
-    this.el.removeEventListener("mouseenter", this.onEnter);
-    this.el.removeEventListener("mouseleave", this.onLeave);
-    this.el.removeEventListener("click", this.onClick);
-  }
-});
-
 AFRAME.registerComponent("float-drift", {
   schema: {
     xAmp: { type: "number", default: 0 },
@@ -93,25 +38,47 @@ const LEVEL_DATA = {
     lateralSpeed: 3.1,
     verticalSpeed: 2.8,
     rings: [
-      { x: 0.0, y: 2.2, z: -14 },
-      { x: 0.8, y: 2.4, z: -26 },
-      { x: -0.9, y: 2.7, z: -38 },
-      { x: 1.1, y: 2.5, z: -50 },
-      { x: -1.2, y: 2.9, z: -62 },
-      { x: 0.2, y: 3.1, z: -74 },
-      { x: 1.4, y: 2.7, z: -86 },
-      { x: -1.0, y: 2.3, z: -98 },
-      { x: 0.7, y: 3.3, z: -110 },
-      { x: 0.0, y: 2.8, z: -122 }
+      { x: 0.0, y: 2.2, z: -20 },
+      { x: 0.8, y: 2.4, z: -32 },
+      { x: -0.9, y: 2.7, z: -44 },
+      { x: 1.1, y: 2.5, z: -56 },
+      { x: -1.2, y: 2.9, z: -68 },
+      { x: 0.2, y: 3.1, z: -80 },
+      { x: 1.4, y: 2.7, z: -92 },
+      { x: -1.0, y: 2.3, z: -104 },
+      { x: 0.7, y: 3.3, z: -116 },
+      { x: 0.0, y: 2.8, z: -128 }
     ],
     obstacles: [
-      { x: -2.4, y: 2.5, z: -20, radius: 1.1 },
-      { x: 2.6, y: 3.2, z: -44, radius: 1.15 },
-      { x: -2.2, y: 3.5, z: -68, radius: 1.2 },
-      { x: 2.5, y: 2.2, z: -92, radius: 1.15 },
-      { x: -2.5, y: 3.0, z: -116, radius: 1.2 }
+      { x: -2.4, y: 2.5, z: -26, radius: 1.1 },
+      { x: 2.6, y: 3.2, z: -50, radius: 1.15 },
+      { x: -2.2, y: 3.5, z: -74, radius: 1.2 },
+      { x: 2.5, y: 2.2, z: -98, radius: 1.15 },
+      { x: -2.5, y: 3.0, z: -122, radius: 1.2 }
     ],
-    bonusRings: []
+    bonusRings: [],
+    startGate: {
+      x: 0.0,
+      y: 2.2,
+      z: -10,
+      label: "Level 1 Start",
+      subLabel: "Paper Run",
+      frameColor: "#7dd3fc",
+      accentColor: "#e0f2fe",
+      bannerColor: "#dbeafe",
+      textColor: "#f8fafc"
+    },
+    finishGate: {
+      x: 0.0,
+      y: 2.8,
+      z: -144,
+      label: "Finish",
+      subLabel: "Level Complete",
+      frameColor: "#22d3ee",
+      accentColor: "#fde68a",
+      bannerColor: "#fef3c7",
+      textColor: "#ffffff"
+    }
   },
   2: {
     label: "LEVEL 2",
@@ -120,37 +87,130 @@ const LEVEL_DATA = {
     lateralSpeed: 3.5,
     verticalSpeed: 3.2,
     rings: [
-      { x: 0.0, y: 2.2, z: -14 },
-      { x: 1.4, y: 2.5, z: -26 },
-      { x: -1.6, y: 3.0, z: -38 },
-      { x: 2.2, y: 3.7, z: -50 },
-      { x: -2.3, y: 2.4, z: -62 },
-      { x: 0.8, y: 3.5, z: -74 },
-      { x: 2.5, y: 2.2, z: -86 },
-      { x: -1.8, y: 4.0, z: -98 },
-      { x: 0.2, y: 2.6, z: -110 },
-      { x: 1.9, y: 3.8, z: -122 },
-      { x: -2.4, y: 2.5, z: -134 },
-      { x: 0.9, y: 4.1, z: -146 },
-      { x: 2.6, y: 2.8, z: -158 },
-      { x: -1.2, y: 3.9, z: -170 },
-      { x: 0.0, y: 3.1, z: -182 }
+      { x: 0.0, y: 2.2, z: -20 },
+      { x: 1.4, y: 2.5, z: -32 },
+      { x: -1.6, y: 3.0, z: -44 },
+      { x: 2.2, y: 3.7, z: -56 },
+      { x: -2.3, y: 2.4, z: -68 },
+      { x: 0.8, y: 3.5, z: -80 },
+      { x: 2.5, y: 2.2, z: -92 },
+      { x: -1.8, y: 4.0, z: -104 },
+      { x: 0.2, y: 2.6, z: -116 },
+      { x: 1.9, y: 3.8, z: -128 },
+      { x: -2.4, y: 2.5, z: -140 },
+      { x: 0.9, y: 4.1, z: -152 },
+      { x: 2.6, y: 2.8, z: -164 },
+      { x: -1.2, y: 3.9, z: -176 },
+      { x: 0.0, y: 3.1, z: -188 }
     ],
     obstacles: [
-      { x: -2.6, y: 2.3, z: -20, radius: 1.1, motion: { axis: "x", amplitude: 0.8, speed: 1.25, phase: 0.1 } },
-      { x: 2.4, y: 3.4, z: -42, radius: 1.18, motion: { axis: "y", amplitude: 0.55, speed: 1.55, phase: 0.7 } },
-      { x: -1.4, y: 3.9, z: -66, radius: 1.2, motion: { axis: "x", amplitude: 1.05, speed: 1.45, phase: 1.2 } },
-      { x: 2.7, y: 2.2, z: -88, radius: 1.15, motion: { axis: "x", amplitude: 0.7, speed: 1.85, phase: 2.1 } },
-      { x: -2.5, y: 3.0, z: -112, radius: 1.2, motion: { axis: "y", amplitude: 0.6, speed: 1.35, phase: 1.8 } },
-      { x: 0.6, y: 4.2, z: -136, radius: 1.28, motion: { axis: "x", amplitude: 1.15, speed: 1.5, phase: 0.5 } },
-      { x: -2.2, y: 2.2, z: -160, radius: 1.18, motion: { axis: "x", amplitude: 0.95, speed: 1.9, phase: 2.8 } },
-      { x: 2.5, y: 3.2, z: -176, radius: 1.2, motion: { axis: "y", amplitude: 0.55, speed: 1.7, phase: 1.1 } }
+      { x: -2.6, y: 2.3, z: -26, radius: 1.1, motion: { axis: "x", amplitude: 0.8, speed: 1.25, phase: 0.1 } },
+      { x: 2.4, y: 3.4, z: -48, radius: 1.18, motion: { axis: "y", amplitude: 0.55, speed: 1.55, phase: 0.7 } },
+      { x: -1.4, y: 3.9, z: -72, radius: 1.2, motion: { axis: "x", amplitude: 1.05, speed: 1.45, phase: 1.2 } },
+      { x: 2.7, y: 2.2, z: -94, radius: 1.15, motion: { axis: "x", amplitude: 0.7, speed: 1.85, phase: 2.1 } },
+      { x: -2.5, y: 3.0, z: -118, radius: 1.2, motion: { axis: "y", amplitude: 0.6, speed: 1.35, phase: 1.8 } },
+      { x: 0.6, y: 4.2, z: -142, radius: 1.28, motion: { axis: "x", amplitude: 1.15, speed: 1.5, phase: 0.5 } },
+      { x: -2.2, y: 2.2, z: -166, radius: 1.18, motion: { axis: "x", amplitude: 0.95, speed: 1.9, phase: 2.8 } },
+      { x: 2.5, y: 3.2, z: -182, radius: 1.2, motion: { axis: "y", amplitude: 0.55, speed: 1.7, phase: 1.1 } }
     ],
     bonusRings: [
-      { x: -2.9, y: 3.8, z: -56 },
-      { x: 2.9, y: 2.1, z: -118 },
-      { x: -2.7, y: 4.2, z: -166 }
-    ]
+      { x: -2.9, y: 3.8, z: -62 },
+      { x: 2.9, y: 2.1, z: -124 },
+      { x: -2.7, y: 4.2, z: -172 }
+    ],
+    startGate: {
+      x: 0.0,
+      y: 2.2,
+      z: -10,
+      label: "Level 2 Start",
+      subLabel: "Storm Glide",
+      frameColor: "#a78bfa",
+      accentColor: "#fbbf24",
+      bannerColor: "#c4b5fd",
+      textColor: "#f8fafc"
+    },
+    finishGate: {
+      x: 0.0,
+      y: 3.1,
+      z: -204,
+      label: "Finish",
+      subLabel: "Level Complete",
+      frameColor: "#f97316",
+      accentColor: "#c4b5fd",
+      bannerColor: "#fed7aa",
+      textColor: "#fff7ed"
+    }
+  },
+  3: {
+    label: "LEVEL 3",
+    state: "LEVEL_3",
+    speed: 9.4,
+    lateralSpeed: 3.8,
+    verticalSpeed: 3.6,
+    rings: [
+      { x: 0.0, y: 2.3, z: -22 },
+      { x: 1.2, y: 2.8, z: -34 },
+      { x: -1.6, y: 3.4, z: -46 },
+      { x: 2.1, y: 4.0, z: -58 },
+      { x: -2.4, y: 2.6, z: -70 },
+      { x: 0.4, y: 4.4, z: -82 },
+      { x: 2.7, y: 3.0, z: -94 },
+      { x: -2.0, y: 4.6, z: -106 },
+      { x: 0.9, y: 2.4, z: -118 },
+      { x: 2.8, y: 4.2, z: -130 },
+      { x: -2.9, y: 2.7, z: -142 },
+      { x: 0.0, y: 4.8, z: -154 },
+      { x: 2.4, y: 3.2, z: -166 },
+      { x: -2.1, y: 4.4, z: -178 },
+      { x: 1.1, y: 2.5, z: -190 },
+      { x: 2.9, y: 4.1, z: -202 },
+      { x: -2.7, y: 3.0, z: -214 },
+      { x: 0.6, y: 4.5, z: -226 },
+      { x: 0.0, y: 3.3, z: -238 }
+    ],
+    obstacles: [
+      { x: -2.7, y: 2.5, z: -30, radius: 1.12, motion: { axis: "x", amplitude: 0.9, speed: 1.35, phase: 0.2 } },
+      { x: 2.5, y: 3.8, z: -52, radius: 1.18, motion: { axis: "y", amplitude: 0.65, speed: 1.55, phase: 0.8 } },
+      { x: -1.9, y: 4.4, z: -76, radius: 1.22, motion: { axis: "x", amplitude: 1.1, speed: 1.5, phase: 1.4 } },
+      { x: 2.9, y: 2.6, z: -98, radius: 1.18, motion: { axis: "x", amplitude: 0.85, speed: 1.9, phase: 2.1 } },
+      { x: -2.8, y: 3.2, z: -122, radius: 1.24, motion: { axis: "y", amplitude: 0.7, speed: 1.45, phase: 1.7 } },
+      { x: 0.7, y: 4.7, z: -146, radius: 1.3, motion: { axis: "x", amplitude: 1.2, speed: 1.6, phase: 0.4 } },
+      { x: -2.4, y: 2.4, z: -170, radius: 1.2, motion: { axis: "x", amplitude: 1.0, speed: 1.85, phase: 2.8 } },
+      { x: 2.6, y: 3.6, z: -188, radius: 1.22, motion: { axis: "y", amplitude: 0.65, speed: 1.75, phase: 1.2 } },
+      { x: -0.6, y: 4.5, z: -206, radius: 1.28, motion: { axis: "x", amplitude: 1.1, speed: 1.55, phase: 2.4 } },
+      { x: 2.8, y: 2.9, z: -222, radius: 1.18, motion: { axis: "x", amplitude: 0.8, speed: 1.95, phase: 0.9 } },
+      { x: -2.5, y: 3.7, z: -236, radius: 1.24, motion: { axis: "y", amplitude: 0.6, speed: 1.7, phase: 1.6 } }
+    ],
+    bonusRings: [
+      { x: -3.0, y: 4.3, z: -64 },
+      { x: 3.0, y: 2.2, z: -124 },
+      { x: -3.0, y: 4.8, z: -184 },
+      { x: 2.8, y: 3.6, z: -220 }
+    ],
+    startGate: {
+      x: 0.0,
+      y: 2.2,
+      z: -10,
+      label: "Level 3 Start",
+      subLabel: "Starry Night Dream Run",
+      frameColor: "#8b5cf6",
+      accentColor: "#93c5fd",
+      bannerColor: "#c4b5fd",
+      textColor: "#f8fafc"
+    },
+    finishGate: {
+      x: 0.0,
+      y: 3.5,
+      z: -254,
+      label: "Dream Finish",
+      subLabel: "Final Night Glide",
+      frameColor: "#f472b6",
+      accentColor: "#bfdbfe",
+      bannerColor: "#ddd6fe",
+      textColor: "#f8fafc",
+      sizeScale: 1.28,
+      specialStyle: "dream"
+    }
   }
 };
 
@@ -160,6 +220,7 @@ const GameManager = {
     MENU: "MENU",
     LEVEL_1: "LEVEL_1",
     LEVEL_2: "LEVEL_2",
+    LEVEL_3: "LEVEL_3",
     WIN: "WIN",
     GAME_OVER: "GAME_OVER",
     PAUSED: "PAUSED"
@@ -180,7 +241,7 @@ const GameManager = {
     },
     HARD: {
       label: "HARD",
-      speedMultiplier: 1.15,
+      speedMultiplier: 1.45,
       obstacleScale: 1.08,
       lives: 2
     }
@@ -229,6 +290,9 @@ const GameManager = {
   movementVector: null,
   playerWorldPosition: null,
   ringLocalPosition: null,
+  planeNoseProbeEl: null,
+  startGateEntity: null,
+  finishGateEntity: null,
   currentEnvironment: null,
   textures: {},
 
@@ -326,96 +390,215 @@ const GameManager = {
 
   buildCockpitModel() {
     this.clearEntity(this.cockpitRoot);
+    this.planeNoseProbeEl = null;
 
     const craftRoot = this.createElement("a-entity", this.cockpitRoot, {
-      id: "craftBody"
+      id: "paperPlaneCockpit"
+    });
+
+    this.createElement("a-triangle", craftRoot, {
+      "vertex-a": "0 0.22 0",
+      "vertex-b": "-0.24 -0.1 0",
+      "vertex-c": "0.24 -0.1 0",
+      position: "0 -0.05 -0.46",
+      material: "color: #f8fafc; side: double; roughness: 1; metalness: 0; opacity: 0.98; transparent: true"
+    });
+
+    this.createElement("a-triangle", craftRoot, {
+      "vertex-a": "0 0.14 0",
+      "vertex-b": "-0.12 -0.06 0",
+      "vertex-c": "0.12 -0.06 0",
+      position: "0 -0.1 -0.26",
+      material: "color: #f1f5f9; side: double; roughness: 1; metalness: 0"
+    });
+
+    this.createElement("a-triangle", craftRoot, {
+      "vertex-a": "0.62 0.13 0",
+      "vertex-b": "-0.04 0.02 0",
+      "vertex-c": "0.7 -0.16 0",
+      position: "-0.56 -0.18 -0.18",
+      rotation: "-6 0 8",
+      material: "color: #fefcf7; side: double; roughness: 1; metalness: 0; opacity: 0.97; transparent: true"
+    });
+
+    this.createElement("a-triangle", craftRoot, {
+      "vertex-a": "-0.62 0.13 0",
+      "vertex-b": "0.04 0.02 0",
+      "vertex-c": "-0.7 -0.16 0",
+      position: "0.56 -0.18 -0.18",
+      rotation: "-6 0 -8",
+      material: "color: #fefcf7; side: double; roughness: 1; metalness: 0; opacity: 0.97; transparent: true"
     });
 
     this.createElement("a-box", craftRoot, {
-      width: 0.24,
-      height: 0.06,
-      depth: 0.52,
-      position: "0 -0.02 -0.1",
-      material: "color: #c7d8f5; metalness: 0.35; roughness: 0.22"
-    });
-
-    this.createElement("a-cone", craftRoot, {
-      "radius-bottom": 0.09,
-      "radius-top": 0.015,
-      height: 0.32,
-      rotation: "90 0 0",
-      position: "0 -0.01 -0.36",
-      material: "color: #dbeafe; metalness: 0.28; roughness: 0.18"
-    });
-
-    this.createElement("a-sphere", craftRoot, {
-      radius: 0.18,
-      scale: "1.15 0.46 0.82",
-      position: "0 0.07 -0.02",
-      material: "color: #0f172a; opacity: 0.78; transparent: true; metalness: 0.1; roughness: 0.08"
+      width: 0.02,
+      height: 0.42,
+      depth: 0.01,
+      position: "0 -0.02 -0.36",
+      material: "color: #cbd5e1; opacity: 0.85; transparent: true; shader: flat"
     });
 
     this.createElement("a-box", craftRoot, {
-      width: 0.52,
-      height: 0.02,
-      depth: 0.08,
-      position: "0 -0.13 0.05",
-      material: "color: #22d3ee; emissive: #22d3ee; emissiveIntensity: 1.1; opacity: 0.82; transparent: true"
+      width: 0.02,
+      height: 0.22,
+      depth: 0.01,
+      position: "-0.45 -0.12 -0.2",
+      rotation: "0 0 66",
+      material: "color: #d1d5db; opacity: 0.76; transparent: true; shader: flat"
     });
 
     this.createElement("a-box", craftRoot, {
-      width: 0.88,
+      width: 0.02,
+      height: 0.22,
+      depth: 0.01,
+      position: "0.45 -0.12 -0.2",
+      rotation: "0 0 -66",
+      material: "color: #d1d5db; opacity: 0.76; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-box", craftRoot, {
+      width: 0.16,
+      height: 0.012,
+      depth: 0.012,
+      position: "0 -0.12 -0.18",
+      material: "color: #93c5fd; opacity: 0.72; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-triangle", craftRoot, {
+      "vertex-a": "0 0.08 0",
+      "vertex-b": "-0.06 -0.02 0",
+      "vertex-c": "0.06 -0.02 0",
+      position: "0 -0.02 -0.6",
+      material: "color: #ffffff; side: double; roughness: 1; metalness: 0"
+    });
+
+    this.planeNoseProbeEl = this.createElement("a-entity", craftRoot, {
+      id: "planeNoseProbe",
+      position: "0 -0.02 -0.64",
+      visible: false
+    });
+  },
+
+  createUiCloudDecor(parent, options) {
+    const root = this.createElement("a-entity", parent, {
+      position: options.position,
+      scale: `${options.scale} ${options.scale * 0.68} ${options.scale}`
+    });
+
+    [
+      { x: 0, y: 0, z: 0, radius: 0.28 },
+      { x: -0.28, y: 0.04, z: 0.02, radius: 0.22 },
+      { x: 0.3, y: 0.03, z: -0.02, radius: 0.24 },
+      { x: 0.06, y: 0.15, z: 0.01, radius: 0.18 }
+    ].forEach((puff) => {
+      this.createElement("a-sphere", root, {
+        radius: puff.radius,
+        position: `${puff.x} ${puff.y} ${puff.z}`,
+        material: `color: ${options.color || "#ffffff"}; opacity: ${options.opacity}; transparent: true; shader: flat`
+      });
+    });
+  },
+
+  createUiPaperPlaneDecor(parent, options) {
+    const root = this.createElement("a-entity", parent, {
+      position: options.position,
+      rotation: options.rotation || "0 0 0",
+      scale: `${options.scale} ${options.scale} ${options.scale}`
+    });
+
+    this.createElement("a-triangle", root, {
+      "vertex-a": "0 0.16 0",
+      "vertex-b": "-0.22 -0.08 0",
+      "vertex-c": "0.22 -0.08 0",
+      material: "color: #f8fafc; side: double; opacity: 0.94; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-triangle", root, {
+      "vertex-a": "0 0.08 0.01",
+      "vertex-b": "-0.1 -0.04 0.01",
+      "vertex-c": "0.1 -0.04 0.01",
+      material: "color: #e5e7eb; side: double; opacity: 0.96; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.014,
+      height: 0.2,
+      depth: 0.01,
+      position: "0 -0.02 0.02",
+      material: "color: #cbd5e1; opacity: 0.75; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.12,
+      height: 0.01,
+      depth: 0.01,
+      position: "0 -0.06 0.03",
+      material: `color: ${options.accentColor || "#93c5fd"}; opacity: 0.7; transparent: true; shader: flat`
+    });
+
+    return root;
+  },
+
+  createFloatingStar(parent, options) {
+    const root = this.createElement("a-entity", parent, {
+      position: options.position,
+      scale: `${options.scale} ${options.scale} ${options.scale}`,
+      "float-drift": `xAmp: ${options.drift.xAmp}; yAmp: ${options.drift.yAmp}; zAmp: ${options.drift.zAmp}; speed: ${options.drift.speed}; phase: ${options.drift.phase}`
+    });
+
+    this.createElement("a-sphere", root, {
+      radius: 0.08,
+      material: `color: ${options.coreColor}; emissive: ${options.coreColor}; emissiveIntensity: 1.3; shader: flat`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.03,
+      height: 0.28,
+      depth: 0.03,
+      material: `color: ${options.sparkColor}; emissive: ${options.sparkColor}; emissiveIntensity: 0.9; shader: flat; opacity: 0.9; transparent: true`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.28,
       height: 0.03,
-      depth: 0.22,
-      position: "-0.52 -0.1 -0.02",
-      rotation: "0 0 10",
-      material: "color: #7aa2d6; metalness: 0.3; roughness: 0.24"
+      depth: 0.03,
+      material: `color: ${options.sparkColor}; emissive: ${options.sparkColor}; emissiveIntensity: 0.9; shader: flat; opacity: 0.9; transparent: true`
     });
 
-    this.createElement("a-box", craftRoot, {
-      width: 0.88,
-      height: 0.03,
-      depth: 0.22,
-      position: "0.52 -0.1 -0.02",
-      rotation: "0 0 -10",
-      material: "color: #7aa2d6; metalness: 0.3; roughness: 0.24"
+    this.createElement("a-sphere", root, {
+      radius: 0.22,
+      material: `color: ${options.glowColor}; opacity: 0.12; transparent: true; shader: flat`
     });
 
-    this.createElement("a-box", craftRoot, {
-      width: 0.26,
-      height: 0.025,
-      depth: 0.1,
-      position: "-0.96 -0.1 0.02",
-      rotation: "0 8 14",
-      material: "color: #9dc2f7; metalness: 0.3; roughness: 0.22"
+    return root;
+  },
+
+  createDreamLantern(parent, options) {
+    const root = this.createElement("a-entity", parent, {
+      position: options.position,
+      scale: `${options.scale} ${options.scale} ${options.scale}`,
+      "float-drift": `xAmp: ${options.drift.xAmp}; yAmp: ${options.drift.yAmp}; zAmp: ${options.drift.zAmp}; speed: ${options.drift.speed}; phase: ${options.drift.phase}`
     });
 
-    this.createElement("a-box", craftRoot, {
-      width: 0.26,
-      height: 0.025,
-      depth: 0.1,
-      position: "0.96 -0.1 0.02",
-      rotation: "0 -8 -14",
-      material: "color: #9dc2f7; metalness: 0.3; roughness: 0.22"
+    this.createElement("a-sphere", root, {
+      radius: 0.28,
+      scale: "1.25 1.45 1.25",
+      material: `color: ${options.glowColor}; opacity: 0.14; transparent: true; shader: flat`
     });
 
-    this.createElement("a-sphere", craftRoot, {
-      radius: 0.035,
-      position: "0 0.02 -0.5",
-      material: "color: #f8fafc; emissive: #bae6fd; emissiveIntensity: 1.25"
+    this.createElement("a-entity", root, {
+      geometry: `primitive: octahedron; radius: 0.22`,
+      material: `color: ${options.coreColor}; emissive: ${options.coreColor}; emissiveIntensity: 1.05; roughness: 0.24; metalness: 0.08`
     });
 
-    this.createElement("a-sphere", craftRoot, {
-      radius: 0.025,
-      position: "-1.08 -0.08 0.02",
-      material: "color: #67e8f9; emissive: #67e8f9; emissiveIntensity: 0.9"
+    this.createElement("a-cylinder", root, {
+      radius: 0.03,
+      height: 0.22,
+      position: "0 0.26 0",
+      material: `color: ${options.sparkColor}; emissive: ${options.sparkColor}; emissiveIntensity: 0.8; shader: flat`
     });
 
-    this.createElement("a-sphere", craftRoot, {
-      radius: 0.025,
-      position: "1.08 -0.08 0.02",
-      material: "color: #a5b4fc; emissive: #a5b4fc; emissiveIntensity: 0.9"
-    });
+    return root;
   },
 
   applyEnvironment(theme) {
@@ -425,6 +608,11 @@ const GameManager = {
 
     this.currentEnvironment = theme;
     this.clearEntity(this.environmentRoot);
+
+    if (theme === "level3") {
+      this.buildLevel3Environment();
+      return;
+    }
 
     if (theme === "level2") {
       this.buildLevel2Environment();
@@ -530,6 +718,106 @@ const GameManager = {
     });
   },
 
+  buildLevel3Environment() {
+    this.sceneEl.setAttribute("background", "color", "#090d26");
+    this.sceneEl.setAttribute("fog", "type: linear; color: #1a1842; near: 38; far: 220");
+    this.skyEl.setAttribute("color", "#0b1234");
+    this.ambientLightEl.setAttribute("light", "type: ambient; intensity: 0.68; color: #dbeafe");
+    this.sunLightEl.setAttribute("light", "type: directional; intensity: 0.38; color: #c4b5fd");
+    this.sunLightEl.setAttribute("position", "-3 9 2");
+    this.fillLightEl.setAttribute("light", "type: directional; intensity: 0.52; color: #60a5fa");
+    this.fillLightEl.setAttribute("position", "4 4 -5");
+
+    this.createCelestialBody({
+      position: "-18 15 -94",
+      innerRadius: 2.9,
+      outerRadius: 5.4,
+      innerColor: "#f8fafc",
+      outerColor: "#93c5fd"
+    });
+
+    [
+      { position: "-18 14 -44", scale: 0.95, drift: { xAmp: 0.45, yAmp: 0.18, zAmp: 0.24, speed: 0.16, phase: 0.2 } },
+      { position: "-8 11 -60", scale: 0.78, drift: { xAmp: 0.4, yAmp: 0.16, zAmp: 0.22, speed: 0.14, phase: 1.4 } },
+      { position: "4 13 -52", scale: 0.88, drift: { xAmp: 0.38, yAmp: 0.14, zAmp: 0.2, speed: 0.17, phase: 2.2 } },
+      { position: "14 12 -74", scale: 0.82, drift: { xAmp: 0.42, yAmp: 0.15, zAmp: 0.2, speed: 0.15, phase: 0.8 } },
+      { position: "20 10 -96", scale: 1.02, drift: { xAmp: 0.46, yAmp: 0.16, zAmp: 0.22, speed: 0.13, phase: 1.9 } },
+      { position: "-16 9 -116", scale: 0.92, drift: { xAmp: 0.36, yAmp: 0.12, zAmp: 0.18, speed: 0.18, phase: 2.7 } },
+      { position: "-4 15 -128", scale: 0.84, drift: { xAmp: 0.44, yAmp: 0.18, zAmp: 0.22, speed: 0.14, phase: 0.5 } },
+      { position: "10 13 -144", scale: 0.76, drift: { xAmp: 0.35, yAmp: 0.12, zAmp: 0.18, speed: 0.16, phase: 1.1 } },
+      { position: "18 11 -168", scale: 0.94, drift: { xAmp: 0.42, yAmp: 0.16, zAmp: 0.24, speed: 0.15, phase: 2.4 } },
+      { position: "-20 12 -186", scale: 0.86, drift: { xAmp: 0.38, yAmp: 0.15, zAmp: 0.2, speed: 0.17, phase: 0.9 } },
+      { position: "-6 10 -212", scale: 0.8, drift: { xAmp: 0.34, yAmp: 0.12, zAmp: 0.18, speed: 0.14, phase: 1.8 } },
+      { position: "12 14 -228", scale: 0.98, drift: { xAmp: 0.45, yAmp: 0.16, zAmp: 0.24, speed: 0.12, phase: 2.9 } }
+    ].forEach((star) => {
+      this.createFloatingStar(this.environmentRoot, {
+        ...star,
+        coreColor: "#ffffff",
+        sparkColor: "#e9d5ff",
+        glowColor: "#93c5fd"
+      });
+    });
+
+    [
+      { x: -18, y: 8.2, z: -38, scale: 2.4, opacity: 0.72, drift: { xAmp: 1.2, yAmp: 0.28, zAmp: 1.0, speed: 0.12, phase: 0.5 } },
+      { x: 16, y: 7.3, z: -66, scale: 2.9, opacity: 0.68, drift: { xAmp: 1.1, yAmp: 0.25, zAmp: 1.1, speed: 0.1, phase: 1.2 } },
+      { x: -4, y: 10.8, z: -92, scale: 3.1, opacity: 0.64, drift: { xAmp: 0.95, yAmp: 0.2, zAmp: 0.9, speed: 0.11, phase: 2.1 } },
+      { x: 18, y: 9.1, z: -124, scale: 2.7, opacity: 0.62, drift: { xAmp: 1.0, yAmp: 0.24, zAmp: 0.9, speed: 0.13, phase: 0.7 } },
+      { x: -19, y: 6.5, z: -154, scale: 3.4, opacity: 0.7, drift: { xAmp: 1.25, yAmp: 0.22, zAmp: 1.0, speed: 0.1, phase: 1.7 } },
+      { x: 7, y: 11.6, z: -182, scale: 2.6, opacity: 0.58, drift: { xAmp: 0.9, yAmp: 0.2, zAmp: 0.85, speed: 0.14, phase: 2.6 } },
+      { x: -2, y: 8.7, z: -214, scale: 3.2, opacity: 0.62, drift: { xAmp: 1.15, yAmp: 0.24, zAmp: 0.95, speed: 0.12, phase: 1.0 } },
+      { x: 20, y: 7.8, z: -242, scale: 2.8, opacity: 0.56, drift: { xAmp: 0.85, yAmp: 0.18, zAmp: 0.78, speed: 0.11, phase: 2.8 } }
+    ].forEach((cloud) => {
+      this.createDecorCloud(this.environmentRoot, cloud, {
+        tint: "#ddd6fe",
+        glow: "#93c5fd"
+      });
+    });
+
+    [
+      { position: "-14 7.6 -48", rotation: "0 0 -14", scale: 1.8, accentColor: "#c4b5fd", drift: { xAmp: 0.6, yAmp: 0.2, zAmp: 0.36, speed: 0.14, phase: 0.2 } },
+      { position: "12 9.4 -88", rotation: "0 0 18", scale: 1.55, accentColor: "#93c5fd", drift: { xAmp: 0.54, yAmp: 0.18, zAmp: 0.34, speed: 0.12, phase: 1.3 } },
+      { position: "-8 10.6 -136", rotation: "0 0 -10", scale: 1.72, accentColor: "#f9a8d4", drift: { xAmp: 0.58, yAmp: 0.2, zAmp: 0.32, speed: 0.13, phase: 2.1 } },
+      { position: "16 8.8 -186", rotation: "0 0 16", scale: 1.62, accentColor: "#bfdbfe", drift: { xAmp: 0.56, yAmp: 0.18, zAmp: 0.3, speed: 0.11, phase: 0.9 } },
+      { position: "0 11.2 -228", rotation: "0 0 -12", scale: 1.88, accentColor: "#c4b5fd", drift: { xAmp: 0.6, yAmp: 0.22, zAmp: 0.34, speed: 0.1, phase: 2.7 } }
+    ].forEach((paperShape) => {
+      const shapeEl = this.createUiPaperPlaneDecor(this.environmentRoot, paperShape);
+      shapeEl.setAttribute(
+        "float-drift",
+        `xAmp: ${paperShape.drift.xAmp}; yAmp: ${paperShape.drift.yAmp}; zAmp: ${paperShape.drift.zAmp}; speed: ${paperShape.drift.speed}; phase: ${paperShape.drift.phase}`
+      );
+    });
+
+    [
+      { position: "-20 4.6 -74", scale: 0.92, drift: { xAmp: 0.48, yAmp: 0.16, zAmp: 0.22, speed: 0.12, phase: 0.6 } },
+      { position: "18 5.3 -118", scale: 0.84, drift: { xAmp: 0.42, yAmp: 0.14, zAmp: 0.18, speed: 0.11, phase: 1.4 } },
+      { position: "-16 6.0 -170", scale: 0.9, drift: { xAmp: 0.44, yAmp: 0.16, zAmp: 0.2, speed: 0.13, phase: 2.0 } },
+      { position: "20 5.8 -224", scale: 0.96, drift: { xAmp: 0.46, yAmp: 0.18, zAmp: 0.22, speed: 0.1, phase: 2.8 } }
+    ].forEach((lantern) => {
+      this.createDreamLantern(this.environmentRoot, {
+        ...lantern,
+        coreColor: "#f9a8d4",
+        sparkColor: "#bfdbfe",
+        glowColor: "#93c5fd"
+      });
+    });
+
+    [
+      { x: -22, y: -2.2, z: -82, scale: 1.55 },
+      { x: 18, y: -1.8, z: -128, scale: 1.82 },
+      { x: -10, y: -3.9, z: -172, scale: 2.02 },
+      { x: 22, y: -4.4, z: -214, scale: 2.22 },
+      { x: -2, y: -5.0, z: -258, scale: 2.4 }
+    ].forEach((island) => {
+      this.createFloatingIsland(this.environmentRoot, island, {
+        topColor: "#6c4ea3",
+        sideColor: "#2c234f",
+        rockColor: "#c4b5fd",
+        accentColor: "#f472b6"
+      });
+    });
+  },
+
   createCelestialBody(options) {
     const root = this.createElement("a-entity", this.environmentRoot, {
       position: options.position
@@ -624,6 +912,142 @@ const GameManager = {
     });
   },
 
+  createCheckpointGate(gateData, type) {
+    const root = this.createElement("a-entity", this.worldRoot, {
+      position: `${gateData.x} ${gateData.y} ${gateData.z}`
+    });
+
+    const sizeScale = gateData.sizeScale || 1;
+    const frameRadius = (type === "finish" ? 2.0 : 1.6) * sizeScale;
+    const tubeRadius = (type === "finish" ? 0.16 : 0.12) * sizeScale;
+    const pillarHeight = (type === "finish" ? 3.8 : 3.0) * sizeScale;
+    const pillarOffset = frameRadius + 1.0;
+
+    const glowEl = this.createElement("a-torus", root, {
+      radius: frameRadius + 0.18,
+      "radius-tubular": tubeRadius * 0.48,
+      rotation: "0 0 0",
+      material: `color: ${gateData.accentColor}; opacity: ${type === "finish" ? 0.22 : 0.16}; transparent: true; shader: flat`
+    });
+
+    const frameEl = this.createElement("a-torus", root, {
+      radius: frameRadius,
+      "radius-tubular": tubeRadius,
+      rotation: "0 0 0",
+      material: `color: ${gateData.frameColor}; emissive: ${gateData.frameColor}; emissiveIntensity: ${type === "finish" ? 1.0 : 0.72}; metalness: 0.08; roughness: 0.35`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.34,
+      height: pillarHeight,
+      depth: 0.3,
+      position: `${-pillarOffset} ${-0.3 * sizeScale} 0`,
+      material: `color: ${gateData.bannerColor}; roughness: 0.82; metalness: 0.04`
+    });
+
+    this.createElement("a-box", root, {
+      width: 0.34,
+      height: pillarHeight,
+      depth: 0.3,
+      position: `${pillarOffset} ${-0.3 * sizeScale} 0`,
+      material: `color: ${gateData.bannerColor}; roughness: 0.82; metalness: 0.04`
+    });
+
+    this.createElement("a-box", root, {
+      width: pillarOffset * 2.0,
+      height: 0.26 * sizeScale,
+      depth: 0.24 * sizeScale,
+      position: `0 ${frameRadius + 1.15 * sizeScale} 0`,
+      material: `color: ${gateData.accentColor}; roughness: 0.72; metalness: 0.04`
+    });
+
+    this.createElement("a-plane", root, {
+      width: pillarOffset * 1.65,
+      height: 0.56 * sizeScale,
+      position: `0 ${frameRadius + 0.72 * sizeScale} ${0.18 * sizeScale}`,
+      material: `color: #082032; opacity: 0.56; transparent: true; shader: flat`
+    });
+
+    this.createText(root, gateData.label, `0 ${frameRadius + 0.8 * sizeScale} ${0.2 * sizeScale}`, 3.1 * sizeScale, gateData.textColor, 28);
+    this.createText(root, gateData.subLabel, `0 ${frameRadius + 0.42 * sizeScale} ${0.2 * sizeScale}`, 2.9 * sizeScale, gateData.accentColor, 26);
+
+    this.createUiCloudDecor(root, {
+      position: `${-pillarOffset - 0.4 * sizeScale} ${-1.1 * sizeScale} -0.08`,
+      scale: 0.9 * sizeScale,
+      opacity: 0.28,
+      color: gateData.bannerColor
+    });
+
+    this.createUiCloudDecor(root, {
+      position: `${pillarOffset + 0.4 * sizeScale} ${-1.1 * sizeScale} -0.08`,
+      scale: 0.9 * sizeScale,
+      opacity: 0.28,
+      color: gateData.bannerColor
+    });
+
+    if (gateData.specialStyle === "dream") {
+      this.createElement("a-torus", root, {
+        radius: frameRadius + 0.58,
+        "radius-tubular": tubeRadius * 0.26,
+        rotation: "0 0 0",
+        material: `color: ${gateData.textColor}; opacity: 0.18; transparent: true; shader: flat`
+      });
+
+      this.createElement("a-sphere", root, {
+        radius: 0.28 * sizeScale,
+        position: `0 ${frameRadius + 1.55 * sizeScale} 0`,
+        material: `color: ${gateData.accentColor}; emissive: ${gateData.accentColor}; emissiveIntensity: 1.2; shader: flat`
+      });
+
+      [
+        { position: `${-0.92 * sizeScale} ${frameRadius + 1.28 * sizeScale} 0`, scale: 0.58 * sizeScale, phase: 0.4 },
+        { position: `${0.92 * sizeScale} ${frameRadius + 1.28 * sizeScale} 0`, scale: 0.58 * sizeScale, phase: 1.2 },
+        { position: `0 ${frameRadius + 1.92 * sizeScale} 0`, scale: 0.66 * sizeScale, phase: 2.0 }
+      ].forEach((star) => {
+        this.createFloatingStar(root, {
+          position: star.position,
+          scale: star.scale,
+          coreColor: gateData.textColor,
+          sparkColor: gateData.accentColor,
+          glowColor: gateData.bannerColor,
+          drift: { xAmp: 0.08, yAmp: 0.08, zAmp: 0.04, speed: 0.22, phase: star.phase }
+        });
+      });
+
+      [
+        { position: `${-pillarOffset - 0.58 * sizeScale} ${0.65 * sizeScale} -0.18`, phase: 0.8 },
+        { position: `${pillarOffset + 0.58 * sizeScale} ${0.65 * sizeScale} -0.18`, phase: 1.7 }
+      ].forEach((lantern) => {
+        this.createDreamLantern(root, {
+          position: lantern.position,
+          scale: 0.66 * sizeScale,
+          coreColor: gateData.frameColor,
+          sparkColor: gateData.accentColor,
+          glowColor: gateData.bannerColor,
+          drift: { xAmp: 0.1, yAmp: 0.09, zAmp: 0.05, speed: 0.2, phase: lantern.phase }
+        });
+      });
+    }
+
+    return {
+      el: root,
+      glowEl,
+      frameEl,
+      x: gateData.x,
+      y: gateData.y,
+      z: gateData.z,
+      openingRadius: (type === "finish" ? 1.55 : 1.25) * sizeScale,
+      depthThreshold: (type === "finish" ? 1.35 : 1.0) * Math.min(sizeScale, 1.2),
+      passed: false,
+      missed: false,
+      resolved: false,
+      ready: type === "start",
+      removed: false,
+      lastLocalPosition: null,
+      type
+    };
+  },
+
   buildUI() {
     this.clearEntity(this.splashUI);
     this.clearEntity(this.menuUI);
@@ -641,49 +1065,103 @@ const GameManager = {
   },
 
   buildSplashUI() {
-    const panel = this.createPanel(this.splashUI, 2.55, 1.82);
+    this.createUiCloudDecor(this.splashUI, {
+      position: "-1.6 0.9 -0.1",
+      scale: 0.85,
+      opacity: 0.24,
+      color: "#ffffff"
+    });
+    this.createUiCloudDecor(this.splashUI, {
+      position: "1.55 -0.75 -0.1",
+      scale: 0.78,
+      opacity: 0.2,
+      color: "#e0f2fe"
+    });
+    this.createUiPaperPlaneDecor(this.splashUI, {
+      position: "1.25 0.98 -0.08",
+      rotation: "0 0 -18",
+      scale: 0.72,
+      accentColor: "#7dd3fc"
+    });
+    this.createUiPaperPlaneDecor(this.splashUI, {
+      position: "-1.18 -0.88 -0.08",
+      rotation: "0 0 22",
+      scale: 0.58,
+      accentColor: "#c4b5fd"
+    });
 
-    this.createText(panel, "Sky Ring Flyer", "0 0.58 0.02", 2.3, "#f8fafc", 46);
-    this.createText(panel, "Mobile VR Flight Game", "0 0.28 0.02", 2.0, "#7dd3fc", 28);
-    this.createText(panel, `Student: ${this.STUDENT_INFO.name}`, "0 0.02 0.02", 2.2, "#ffffff", 26);
-    this.createText(panel, `ID: ${this.STUDENT_INFO.id}`, "0 -0.19 0.02", 2.2, "#ffffff", 26);
-    this.createText(panel, this.STUDENT_INFO.course, "0 -0.4 0.02", 2.2, "#cbd5e1", 24);
+    const panel = this.createPanel(this.splashUI, 2.92, 2.22, "#07263b", 0.9);
+
+    this.createText(panel, "Sky Ring Flyer", "0 0.82 0.02", 2.5, "#f8fafc", 48);
+    this.createText(panel, "Fly your paper plane through the clouds", "0 0.5 0.02", 2.45, "#bae6fd", 30);
+    this.createText(panel, `Student: ${this.STUDENT_INFO.name}`, "0 0.14 0.02", 2.28, "#ffffff", 26);
+    this.createText(panel, `ID: ${this.STUDENT_INFO.id}`, "0 -0.1 0.02", 2.28, "#ffffff", 26);
+    this.createText(panel, this.STUDENT_INFO.course, "0 -0.34 0.02", 2.35, "#cbd5e1", 24);
+    this.createText(panel, "A whimsical stereoscopic VR sky run", "0 -0.62 0.02", 2.32, "#93c5fd", 24);
 
     this.createButton(panel, {
       id: "splashContinueButton",
       label: "Continue",
       action: "continue",
-      width: 1.08,
-      height: 0.24,
-      position: "0 -0.7 0.03",
-      color: "#0f4c5c",
-      hoverColor: "#0f766e"
+      width: 1.24,
+      height: 0.28,
+      position: "0 -0.94 0.03",
+      color: "#0284c7",
+      hoverColor: "#0ea5e9"
     });
   },
 
   buildMenuUI() {
-    const panel = this.createPanel(this.menuUI, 2.78, 2.78);
+    this.createUiCloudDecor(this.menuUI, {
+      position: "-1.72 0.98 -0.1",
+      scale: 0.92,
+      opacity: 0.22,
+      color: "#ffffff"
+    });
+    this.createUiCloudDecor(this.menuUI, {
+      position: "1.7 -0.98 -0.1",
+      scale: 0.88,
+      opacity: 0.2,
+      color: "#dbeafe"
+    });
+    this.createUiPaperPlaneDecor(this.menuUI, {
+      position: "1.36 1.08 -0.08",
+      rotation: "0 0 -16",
+      scale: 0.66,
+      accentColor: "#7dd3fc"
+    });
+    this.createUiPaperPlaneDecor(this.menuUI, {
+      position: "-1.28 -1.12 -0.08",
+      rotation: "0 0 18",
+      scale: 0.54,
+      accentColor: "#f9a8d4"
+    });
 
-    this.createText(panel, "Setup Menu", "0 1.0 0.02", 2.35, "#f8fafc", 42);
-    this.createText(panel, "Use gaze or mouse click to select an option.", "0 0.68 0.02", 2.3, "#bfdbfe", 24);
-    this.createText(panel, "Tap the goggles icon on mobile for stereoscopic VR.", "0 0.4 0.02", 2.3, "#7dd3fc", 22);
+    const panel = this.createPanel(this.menuUI, 3.02, 3.48, "#07263b", 0.9);
+
+    this.createText(panel, "Paper Flight Setup", "0 1.18 0.02", 2.52, "#f8fafc", 42);
+    this.createText(panel, "Tune your sky run before takeoff.", "0 0.88 0.02", 2.45, "#bae6fd", 26);
+    this.createText(panel, "Use gaze or mouse click to select an option.", "0 0.62 0.02", 2.42, "#bfdbfe", 24);
+    this.createText(panel, "Tap the goggles icon on mobile for stereoscopic VR.", "0 0.34 0.02", 2.45, "#7dd3fc", 22);
 
     this.menuMusicButton = this.createButton(panel, {
       id: "musicButton",
       label: "Music: OFF",
       action: "toggle-music",
-      width: 1.66,
-      height: 0.26,
-      position: "0 -0.04 0.03"
+      width: 1.82,
+      height: 0.28,
+      position: "0 -0.12 0.03",
+      color: "#0f4c5c",
+      hoverColor: "#0f766e"
     });
 
     this.menuDifficultyButton = this.createButton(panel, {
       id: "difficultyButton",
       label: "Difficulty: EASY",
       action: "toggle-difficulty",
-      width: 1.66,
-      height: 0.26,
-      position: "0 -0.5 0.03",
+      width: 1.82,
+      height: 0.28,
+      position: "0 -0.62 0.03",
       color: "#3b1d6e",
       hoverColor: "#5b21b6"
     });
@@ -692,14 +1170,15 @@ const GameManager = {
       id: "startButton",
       label: "Start Game",
       action: "start-game",
-      width: 1.66,
-      height: 0.28,
-      position: "0 -0.96 0.03",
+      width: 1.82,
+      height: 0.3,
+      position: "0 -1.12 0.03",
       color: "#0f4c5c",
       hoverColor: "#0f766e"
     });
 
-    this.createText(panel, "Rings score points. Clouds cost lives.", "0 -1.28 0.02", 2.24, "#dbeafe", 22);
+    this.createText(panel, "Rings score points. Clouds cost lives.", "0 -1.48 0.02", 2.42, "#dbeafe", 22);
+    this.createText(panel, "Glide cleanly from the start gate to the finish gate.", "0 -1.68 0.02", 2.5, "#c4b5fd", 22);
   },
 
   buildHudUI() {
@@ -795,6 +1274,11 @@ const GameManager = {
   },
 
   bindPersistentListeners() {
+    this.sceneEl.addEventListener("loaded", () => {
+      this.updateCursorMode();
+      this.refreshCursorTargets();
+    }, { once: true });
+
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.isGameplayState()) {
         this.pauseGame();
@@ -817,6 +1301,14 @@ const GameManager = {
   },
 
   handleAction(action) {
+    if (!this.isActionAllowed(action)) {
+      console.log("[Sky Ring Flyer] Ignored action", {
+        action,
+        state: this.state
+      });
+      return;
+    }
+
     this.ensureAudioReady();
 
     switch (action) {
@@ -830,7 +1322,11 @@ const GameManager = {
         this.toggleDifficulty();
         break;
       case "start-game":
+        console.log("[Sky Ring Flyer] Start Game clicked");
+        this.startNewGame();
+        break;
       case "restart-game":
+        console.log("[Sky Ring Flyer] Restart Game clicked");
         this.startNewGame();
         break;
       case "toggle-pause":
@@ -851,12 +1347,34 @@ const GameManager = {
     }
   },
 
+  isActionAllowed(action) {
+    switch (action) {
+      case "continue":
+        return this.state === this.STATES.SPLASH;
+      case "toggle-music":
+      case "toggle-difficulty":
+      case "start-game":
+        return this.state === this.STATES.MENU;
+      case "restart-game":
+        return this.state === this.STATES.WIN || this.state === this.STATES.GAME_OVER;
+      case "toggle-pause":
+        return this.isGameplayState() || this.state === this.STATES.PAUSED;
+      case "resume-game":
+        return this.state === this.STATES.PAUSED;
+      case "back-to-menu":
+        return this.state === this.STATES.PAUSED || this.state === this.STATES.WIN || this.state === this.STATES.GAME_OVER;
+      default:
+        return false;
+    }
+  },
+
   setState(nextState) {
     if (this.state === nextState) {
       return;
     }
 
     this.state = nextState;
+    console.log("[Sky Ring Flyer] Current game state:", this.state);
     this.applyUIVisibility();
     this.refreshCursorTargets();
 
@@ -870,7 +1388,7 @@ const GameManager = {
   },
 
   applyUIVisibility() {
-    const gameplayVisible = this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2;
+    const gameplayVisible = this.isGameplayState();
     const visibility = {
       splashUI: this.state === this.STATES.SPLASH,
       menuUI: this.state === this.STATES.MENU,
@@ -891,10 +1409,13 @@ const GameManager = {
 
   setButtonsEnabled(root, enabled) {
     root.querySelectorAll("[data-ui-button]").forEach((button) => {
-      if (enabled) {
-        button.classList.add("clickable");
-      } else {
-        button.classList.remove("clickable");
+      button._isEnabled = enabled;
+      button.setAttribute("class", enabled ? "ui-button clickable" : "ui-button");
+
+      if (!enabled) {
+        const buttonRoot = button._buttonRootEl || button;
+        buttonRoot.object3D.scale.set(1, 1, 1);
+        button.setAttribute("material", "color", button._baseColor || "#14314d");
       }
     });
   },
@@ -972,6 +1493,8 @@ const GameManager = {
       verticalSpeed: baseLevel.verticalSpeed,
       rings: baseLevel.rings.map((ring) => ({ ...ring })),
       bonusRings: baseLevel.bonusRings.map((ring) => ({ ...ring })),
+      startGate: { ...baseLevel.startGate },
+      finishGate: { ...baseLevel.finishGate },
       obstacles: baseLevel.obstacles.map((obstacle) => ({
         ...obstacle,
         radius: obstacle.radius * difficultySettings.obstacleScale,
@@ -988,13 +1511,21 @@ const GameManager = {
     this.pausedFromState = null;
     this.gameplayFrozen = false;
 
-    this.applyEnvironment(levelNumber === 2 ? "level2" : "level1");
+    this.applyEnvironment(levelNumber === 3 ? "level3" : levelNumber === 2 ? "level2" : "level1");
 
     this.positionPlayerAtStart();
     this.buildLevelEntities();
     this.refreshHud();
     this.setState(this.currentLevel.state);
-    console.log("[Sky Ring Flyer] Gameplay started in state:", this.state);
+
+    if (levelNumber === 1) {
+      console.log("[Sky Ring Flyer] Level 1 started");
+    } else if (levelNumber === 2) {
+      console.log("[Sky Ring Flyer] Level 2 started");
+    } else if (levelNumber === 3) {
+      console.log("[Sky Ring Flyer] Level 3 started");
+    }
+
     this.logStartAlignment();
   },
 
@@ -1010,31 +1541,46 @@ const GameManager = {
     this.currentLevel.obstacles.forEach((obstacleData, index) => {
       this.obstacles.push(this.createCloudEntity(obstacleData, index + 1));
     });
+
+    this.startGateEntity = this.createCheckpointGate(this.currentLevel.startGate, "start");
+    this.finishGateEntity = this.createCheckpointGate(this.currentLevel.finishGate, "finish");
   },
 
   createRingEntity(ringData, isBonus, index) {
     const ringEl = this.createElement("a-entity", this.worldRoot, {
       position: `${ringData.x} ${ringData.y} ${ringData.z}`,
-      geometry: `primitive: torus; radius: ${isBonus ? 0.85 : 0.95}; radiusTubular: ${isBonus ? 0.12 : 0.13}; segmentsRadial: 18; segmentsTubular: 36`,
-      material: `src: ${isBonus ? this.textures.bonus : this.textures.ring}; metalness: 0.05; roughness: 0.45; emissive: ${isBonus ? "#f59e0b" : "#38bdf8"}; emissiveIntensity: ${isBonus ? 0.65 : 0.42}`,
       rotation: "0 0 0"
+    });
+
+    const triggerRadius = isBonus ? 0.62 : 0.72;
+    const triggerDepth = 0.6;
+
+    this.createElement("a-entity", ringEl, {
+      geometry: `primitive: torus; radius: ${isBonus ? 0.85 : 0.95}; radiusTubular: ${isBonus ? 0.12 : 0.13}; segmentsRadial: 18; segmentsTubular: 36`,
+      material: `src: ${isBonus ? this.textures.bonus : this.textures.ring}; metalness: 0.05; roughness: 0.45; emissive: ${isBonus ? "#f59e0b" : "#38bdf8"}; emissiveIntensity: ${isBonus ? 0.65 : 0.42}`
     });
 
     this.createElement("a-entity", ringEl, {
       geometry: `primitive: torus; radius: ${isBonus ? 0.98 : 1.08}; radiusTubular: 0.03; segmentsRadial: 10; segmentsTubular: 28`,
-      material: `color: ${isBonus ? "#fde68a" : "#bfdbfe"}; opacity: 0.35; transparent: true; shader: flat`,
-      rotation: "0 0 0"
+      material: `color: ${isBonus ? "#fde68a" : "#bfdbfe"}; opacity: 0.35; transparent: true; shader: flat`
+    });
+
+    const triggerEl = this.createElement("a-circle", ringEl, {
+      radius: triggerRadius,
+      segments: 32,
+      material: `color: ${isBonus ? "#fde68a" : "#93c5fd"}; opacity: ${isBonus ? 0.3 : 0.24}; transparent: true; shader: flat; side: double`
     });
 
     return {
       id: `${isBonus ? "bonus" : "ring"}-${index}`,
       el: ringEl,
+      triggerEl,
       x: ringData.x,
       y: ringData.y,
       z: ringData.z,
       radius: isBonus ? this.collision.bonusRingRadius : this.collision.ringRadius,
-      openingRadius: isBonus ? 0.6 : 0.7,
-      depthThreshold: 0.85,
+      triggerRadius,
+      triggerDepth,
       isBonus,
       passed: false,
       missed: false,
@@ -1113,7 +1659,7 @@ const GameManager = {
   },
 
   isGameplayState() {
-    return this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2;
+    return this.state === this.STATES.LEVEL_1 || this.state === this.STATES.LEVEL_2 || this.state === this.STATES.LEVEL_3;
   },
 
   tick(time, delta) {
@@ -1125,6 +1671,7 @@ const GameManager = {
     const direction = this.updatePlayerMotion(deltaSeconds);
     this.updateMovingObstacles(time / 1000);
     this.processRingChecks();
+    this.processFinishGateCheck();
     this.processObstacleChecks(time);
     this.cleanupPassedEntities();
     this.debugFlightState(time, direction);
@@ -1185,8 +1732,10 @@ const GameManager = {
   },
 
   processRingChecks() {
+    // Score rings from the paper-plane nose against the center checkpoint disk.
     const playerWorldPosition = this.playerWorldPosition;
-    this.cameraEl.object3D.getWorldPosition(playerWorldPosition);
+    const checkpointSource = this.planeNoseProbeEl || this.rigEl;
+    checkpointSource.object3D.getWorldPosition(playerWorldPosition);
     const allRings = this.rings.concat(this.bonusRings);
 
     allRings.forEach((ring) => {
@@ -1196,19 +1745,18 @@ const GameManager = {
 
       const localPosition = this.getPlayerPositionInRingSpace(ring, playerWorldPosition);
       const crossingData = this.getRingCrossingData(ring, localPosition);
-      const radialDistance = crossingData
-        ? Math.hypot(crossingData.x, crossingData.y)
-        : Math.hypot(localPosition.x, localPosition.y);
-      const withinGate = radialDistance <= ring.openingRadius;
-      const closeToPlane = Math.abs(localPosition.z) <= ring.depthThreshold;
-      const crossedPlane = Boolean(crossingData);
+      const triggerTestPosition = crossingData || localPosition;
+      const radialDistance = Math.hypot(triggerTestPosition.x, triggerTestPosition.y);
+      const withinTrigger = radialDistance <= ring.triggerRadius;
+      const closeToTriggerPlane = Math.abs(localPosition.z) <= ring.triggerDepth;
+      const crossedTriggerPlane = Boolean(crossingData);
 
-      if ((closeToPlane || crossedPlane) && withinGate) {
+      if ((closeToTriggerPlane || crossedTriggerPlane) && withinTrigger) {
         this.collectRing(ring, localPosition, crossingData);
         return;
       }
 
-      if (localPosition.z < -ring.depthThreshold) {
+      if (localPosition.z < -ring.triggerDepth) {
         this.resolveMissedRing(ring, localPosition);
         return;
       }
@@ -1221,13 +1769,77 @@ const GameManager = {
     });
   },
 
-  getPlayerPositionInRingSpace(ring, playerWorldPosition) {
+  processFinishGateCheck() {
+    if (!this.finishGateEntity || this.finishGateEntity.resolved) {
+      return;
+    }
+
+    const localPosition = this.getPlayerPositionInTargetSpace(this.finishGateEntity, this.playerWorldPosition);
+    const crossingData = this.getGateCrossingData(this.finishGateEntity, localPosition);
+    const gateTestPosition = crossingData || localPosition;
+    const radialDistance = Math.hypot(gateTestPosition.x, gateTestPosition.y);
+    const withinGate = radialDistance <= this.finishGateEntity.openingRadius;
+    const closeToPlane = Math.abs(localPosition.z) <= this.finishGateEntity.depthThreshold;
+    const gateReady = this.finishGateEntity.ready && this.resolvedRings >= this.totalRings;
+
+    if ((closeToPlane || crossingData) && withinGate && gateReady) {
+      this.finishGateEntity.passed = true;
+      this.finishGateEntity.resolved = true;
+      console.log("[Sky Ring Flyer] Finish gate reached", {
+        ringLikeLocalPosition: localPosition,
+        crossingData
+      });
+      this.handleFinishGatePass();
+      return;
+    }
+
+    this.finishGateEntity.lastLocalPosition = {
+      x: localPosition.x,
+      y: localPosition.y,
+      z: localPosition.z
+    };
+  },
+
+  getPlayerPositionInTargetSpace(target, playerWorldPosition) {
     const localPosition = this.ringLocalPosition.copy(playerWorldPosition);
-    ring.el.object3D.worldToLocal(localPosition);
+    target.el.object3D.worldToLocal(localPosition);
     return {
       x: localPosition.x,
       y: localPosition.y,
       z: localPosition.z
+    };
+  },
+
+  getPlayerPositionInRingSpace(ring, playerWorldPosition) {
+    return this.getPlayerPositionInTargetSpace(ring, playerWorldPosition);
+  },
+
+  getGateCrossingData(gate, localPosition) {
+    if (!gate.lastLocalPosition) {
+      return null;
+    }
+
+    const previous = gate.lastLocalPosition;
+    const crossedForward = previous.z > 0 && localPosition.z <= 0;
+    const crossedWithinBand = Math.abs(localPosition.z) <= gate.depthThreshold;
+
+    if (!crossedForward && !crossedWithinBand) {
+      return null;
+    }
+
+    if (Math.abs(previous.z - localPosition.z) < 0.0001) {
+      return {
+        x: localPosition.x,
+        y: localPosition.y,
+        z: localPosition.z
+      };
+    }
+
+    const t = THREE.MathUtils.clamp(previous.z / (previous.z - localPosition.z), 0, 1);
+    return {
+      x: THREE.MathUtils.lerp(previous.x, localPosition.x, t),
+      y: THREE.MathUtils.lerp(previous.y, localPosition.y, t),
+      z: THREE.MathUtils.lerp(previous.z, localPosition.z, t)
     };
   },
 
@@ -1238,7 +1850,7 @@ const GameManager = {
 
     const previous = ring.lastLocalPosition;
     const crossedForward = previous.z > 0 && localPosition.z <= 0;
-    const crossedWithinBand = Math.abs(localPosition.z) <= ring.depthThreshold;
+    const crossedWithinBand = Math.abs(localPosition.z) <= ring.triggerDepth;
 
     if (!crossedForward && !crossedWithinBand) {
       return null;
@@ -1322,12 +1934,12 @@ const GameManager = {
   logRingEvent(ring, localPosition, crossingData, scored, missed) {
     console.log("[Sky Ring Flyer] Ring gate check", {
       ringId: ring.id,
-      playerLocalPosition: {
+      noseLocalPosition: {
         x: Number(localPosition.x.toFixed(2)),
         y: Number(localPosition.y.toFixed(2)),
         z: Number(localPosition.z.toFixed(2))
       },
-      planeCrossPosition: crossingData
+      triggerPlanePosition: crossingData
         ? {
             x: Number(crossingData.x.toFixed(2)),
             y: Number(crossingData.y.toFixed(2)),
@@ -1336,8 +1948,8 @@ const GameManager = {
         : null,
       scored,
       missed,
-      openingRadius: ring.openingRadius,
-      depthThreshold: ring.depthThreshold
+      triggerRadius: ring.triggerRadius,
+      triggerDepth: ring.triggerDepth
     });
   },
 
@@ -1411,14 +2023,40 @@ const GameManager = {
       return;
     }
 
+    if (this.finishGateEntity) {
+      this.finishGateEntity.ready = true;
+      this.finishGateEntity.frameEl.setAttribute(
+        "material",
+        `color: ${this.currentLevel.finishGate.frameColor}; emissive: ${this.currentLevel.finishGate.frameColor}; emissiveIntensity: 1.35; metalness: 0.08; roughness: 0.28`
+      );
+      this.finishGateEntity.glowEl.setAttribute(
+        "material",
+        `color: ${this.currentLevel.finishGate.accentColor}; opacity: 0.32; transparent: true; shader: flat`
+      );
+    }
+  },
+
+  handleFinishGatePass() {
+    if (this.transitionLocked) {
+      return;
+    }
+
     this.transitionLocked = true;
     this.gameplayFrozen = true;
     this.clearScheduledActions();
     this.persistHighScoreIfNeeded();
+    console.log("[Sky Ring Flyer] Finish gate reached for level", this.levelNumber);
 
     if (this.levelNumber === 1) {
       this.scheduleAction(() => {
         this.startLevel(2);
+      }, 1200);
+      return;
+    }
+
+    if (this.levelNumber === 2) {
+      this.scheduleAction(() => {
+        this.startLevel(3);
       }, 1200);
       return;
     }
@@ -1433,6 +2071,7 @@ const GameManager = {
     this.currentLevel = null;
     this.persistHighScoreIfNeeded();
     this.playSfx("win");
+    console.log("[Sky Ring Flyer] Win triggered");
     this.setText(
       this.winSummaryText,
       `Score ${this.score}\nHigh Score ${this.highScore}\nDifficulty ${this.difficulty}`,
@@ -1454,6 +2093,7 @@ const GameManager = {
     this.currentLevel = null;
     this.persistHighScoreIfNeeded();
     this.playSfx("lose");
+    console.log("[Sky Ring Flyer] Game over triggered");
     this.setText(
       this.gameOverSummaryText,
       `Score ${this.score}\nHigh Score ${this.highScore}\nDifficulty ${this.difficulty}`,
@@ -1472,6 +2112,8 @@ const GameManager = {
     this.rings = [];
     this.bonusRings = [];
     this.obstacles = [];
+    this.startGateEntity = null;
+    this.finishGateEntity = null;
     this.playerHitCooldownUntil = 0;
 
     while (this.worldRoot.firstChild) {
@@ -1481,11 +2123,13 @@ const GameManager = {
 
   positionPlayerAtStart() {
     const position = this.rigEl.object3D.position;
-    const firstRing = this.currentLevel && this.currentLevel.rings.length > 0
-      ? this.currentLevel.rings[0]
-      : { x: 0, y: 2.2 };
+    const startLane = this.currentLevel && this.currentLevel.startGate
+      ? this.currentLevel.startGate
+      : this.currentLevel && this.currentLevel.rings.length > 0
+        ? this.currentLevel.rings[0]
+        : { x: 0, y: 2.2 };
 
-    position.set(firstRing.x, firstRing.y, 0);
+    position.set(startLane.x, startLane.y, 0);
   },
 
   logStartAlignment() {
@@ -1741,6 +2385,12 @@ const GameManager = {
     const panel = this.createElement("a-entity", parent, {});
 
     this.createElement("a-plane", panel, {
+      width: width + 0.12,
+      height: height + 0.12,
+      material: "color: #7dd3fc; opacity: 0.12; transparent: true; shader: flat"
+    });
+
+    this.createElement("a-plane", panel, {
       width,
       height,
       material: `color: ${color}; opacity: ${opacity}; shader: flat`
@@ -1751,6 +2401,13 @@ const GameManager = {
       height: height - 0.08,
       position: "0 0 0.01",
       material: "color: #0c2538; opacity: 0.28; shader: flat"
+    });
+
+    this.createElement("a-plane", panel, {
+      width: width - 0.16,
+      height: 0.06,
+      position: `0 ${height / 2 - 0.18} 0.02`,
+      material: "color: #7dd3fc; opacity: 0.24; transparent: true; shader: flat"
     });
 
     return panel;
@@ -1770,23 +2427,64 @@ const GameManager = {
 
     const button = this.createElement("a-plane", buttonRoot, {
       id: options.id,
-      class: "ui-button clickable",
+      class: "ui-button",
       "data-ui-button": "true",
       width: options.width,
       height: options.height,
-      material: `color: ${options.color || "#14314d"}; opacity: 0.96; shader: flat`,
-      "menu-button": `action: ${options.action}; baseColor: ${options.color || "#14314d"}; hoverColor: ${options.hoverColor || "#1d5f8c"}`
+      material: `color: ${options.color || "#14314d"}; opacity: 0.96; shader: flat`
     });
 
     const label = this.createElement("a-entity", buttonRoot, {
       position: "0 0 0.02"
     });
 
+    button._action = options.action;
     button._buttonRootEl = buttonRoot;
     button._labelEl = label;
+    button._baseColor = options.color || "#14314d";
+    button._hoverColor = options.hoverColor || "#1d5f8c";
+    button._isEnabled = false;
+    button._activationLocked = false;
 
+    this.bindButtonEvents(button);
     this.setButtonLabel(button, options.label);
     return button;
+  },
+
+  bindButtonEvents(button) {
+    button._onEnter = () => {
+      if (!button._isEnabled) {
+        return;
+      }
+
+      const buttonRoot = button._buttonRootEl || button;
+      buttonRoot.object3D.scale.set(1.03, 1.03, 1.03);
+      button.setAttribute("material", "color", button._hoverColor);
+    };
+
+    button._onLeave = () => {
+      const buttonRoot = button._buttonRootEl || button;
+      buttonRoot.object3D.scale.set(1, 1, 1);
+      button.setAttribute("material", "color", button._baseColor);
+    };
+
+    button._onClick = () => {
+      if (!button._isEnabled || button._activationLocked) {
+        return;
+      }
+
+      button._activationLocked = true;
+      console.log("[Sky Ring Flyer] Button clicked:", button.id || button._action);
+      this.handleAction(button._action);
+
+      window.setTimeout(() => {
+        button._activationLocked = false;
+      }, 250);
+    };
+
+    button.addEventListener("mouseenter", button._onEnter);
+    button.addEventListener("mouseleave", button._onLeave);
+    button.addEventListener("click", button._onClick);
   },
 
   setButtonLabel(button, value) {
