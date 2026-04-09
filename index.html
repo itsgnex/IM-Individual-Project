@@ -29,6 +29,10 @@
       background-image: url("baground_2.png");
     }
 
+    body.story-intro-active {
+      background-image: linear-gradient(rgba(4, 12, 22, 0.28), rgba(4, 12, 22, 0.34)), var(--story-bg-image, url("story1.png")), url("baground_2.png");
+    }
+
     #splash-overlay {
       position: fixed;
       inset: 0;
@@ -84,6 +88,34 @@
       pointer-events: none;
     }
 
+    #story-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 29;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 4vw, 56px);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    #story-overlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 38%, rgba(8, 18, 30, 0.08), rgba(3, 9, 18, 0.2) 68%, rgba(2, 7, 14, 0.34));
+      pointer-events: none;
+    }
+
+    body:not(.story-intro-active) #story-overlay,
+    body.vr-mode #story-overlay {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
     #splash-content {
       position: absolute;
       left: 50%;
@@ -114,6 +146,21 @@
       pointer-events: none;
     }
 
+    #story-content {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(880px, 94vw);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
     .splash-title-group,
     .splash-info-card,
     .splash-meta-group,
@@ -136,6 +183,18 @@
       gap: 12px;
     }
 
+    .story-title-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      max-width: 100%;
+      margin-inline: auto;
+      text-align: center;
+      pointer-events: none;
+    }
+
     .menu-meta-group {
       gap: 8px;
     }
@@ -143,6 +202,93 @@
     .menu-button-stack {
       gap: 14px;
       width: min(430px, 82vw);
+    }
+
+    .story-frame {
+      width: min(760px, 92vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: clamp(18px, 2vw, 28px);
+      border-radius: 30px;
+      background: rgba(6, 22, 38, 0.22);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 18px 48px rgba(3, 17, 32, 0.16);
+      pointer-events: none;
+    }
+
+    #storySlideProgress {
+      margin: 0;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(8, 32, 50, 0.18);
+      backdrop-filter: blur(4px);
+      font-size: clamp(14px, 1vw, 18px);
+      color: #edf5ff;
+      text-shadow: 0 2px 6px rgba(3, 17, 32, 0.3);
+    }
+
+    #storyImageWrap {
+      width: min(700px, 88vw);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 24px;
+      background: rgba(8, 32, 50, 0.28);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+
+    #storySlideImage {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #storyImageWrap.is-fallback {
+      display: none;
+    }
+
+    .story-text-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      max-width: min(680px, 86vw);
+      padding: 14px 20px;
+      border-radius: 24px;
+      background: rgba(7, 24, 40, 0.2);
+      backdrop-filter: blur(6px);
+      pointer-events: none;
+    }
+
+    #storySlideHeading,
+    #storySlideText {
+      margin: 0;
+      text-align: center;
+      text-shadow: 0 2px 6px rgba(3, 17, 32, 0.34), 0 8px 24px rgba(3, 17, 32, 0.22);
+    }
+
+    #storySlideHeading {
+      font-size: clamp(28px, 3vw, 46px);
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    #storySlideText {
+      font-size: clamp(18px, 1.5vw, 26px);
+      line-height: 1.38;
+      color: #eff6ff;
+      max-width: 38ch;
+    }
+
+    .story-button-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      pointer-events: none;
     }
 
     .splash-title-accent {
@@ -316,6 +462,36 @@
       outline: none;
     }
 
+    .html-story-button {
+      min-width: min(240px, 38vw);
+      padding: 16px 26px;
+      border: 0;
+      border-radius: 20px;
+      color: #ffffff;
+      font-size: clamp(20px, 1.8vw, 28px);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+      box-shadow: 0 16px 36px rgba(3, 17, 32, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .html-story-button:hover,
+    .html-story-button:focus-visible {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+      outline: none;
+    }
+
+    #htmlStorySkipButton {
+      background: linear-gradient(180deg, #36556b 0%, #213748 100%);
+    }
+
+    #htmlStoryNextButton {
+      background: linear-gradient(180deg, #1da8ff 0%, #0b8be7 100%);
+    }
+
     #htmlMenuMusicButton,
     #htmlStoryModeButton {
       background: linear-gradient(180deg, #176c84 0%, #0f4c5c 100%);
@@ -341,6 +517,15 @@
         gap: 16px;
       }
 
+      #story-content {
+        width: min(92vw, 760px);
+      }
+
+      .story-frame {
+        width: min(92vw, 720px);
+        gap: 16px;
+      }
+
       .splash-info-card {
         padding: 16px 22px;
       }
@@ -362,6 +547,11 @@
         gap: 14px;
       }
 
+      #story-content {
+        width: min(94vw, 560px);
+        gap: 14px;
+      }
+
       #splashSubtitle {
         max-width: 19ch;
         padding: 10px 18px;
@@ -378,6 +568,24 @@
 
       .menu-button-stack {
         width: min(86vw, 420px);
+      }
+
+      .story-frame {
+        width: min(92vw, 520px);
+        padding: 16px;
+      }
+
+      #storyImageWrap {
+        width: 100%;
+      }
+
+      .story-button-row {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .html-story-button {
+        width: min(280px, 82vw);
       }
 
       #htmlSplashContinueButton {
@@ -420,6 +628,31 @@
       </div>
 
       <button id="htmlSplashContinueButton" type="button">Continue</button>
+    </div>
+  </div>
+
+  <div id="story-overlay" aria-live="polite" aria-hidden="true">
+    <div id="story-content">
+      <div class="story-title-group">
+        <div class="splash-title-accent"></div>
+        <p id="storySlideProgress">Story 1 of 3</p>
+      </div>
+
+      <div class="story-frame">
+        <div id="storyImageWrap">
+          <img id="storySlideImage" src="story1.png" alt="Story slide illustration">
+        </div>
+
+        <div class="story-text-card">
+          <h2 id="storySlideHeading">The Journey Begins</h2>
+          <p id="storySlideText">A paper plane rises into a magical sky where glowing rings and drifting clouds mark the path ahead.</p>
+        </div>
+
+        <div class="story-button-row">
+          <button id="htmlStorySkipButton" class="html-story-button" type="button">Skip</button>
+          <button id="htmlStoryNextButton" class="html-story-button" type="button">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -496,6 +729,7 @@
 
         <a-entity id="uiRoot">
           <a-entity id="splashUI" position="0 0 -2.5" visible="false"></a-entity>
+          <a-entity id="storyIntroUI" position="0 0 -2.5" visible="false"></a-entity>
           <a-entity id="menuUI" position="0 0 -2.5" visible="false"></a-entity>
           <a-entity id="hudUI" position="0 1.04 -1.38" visible="false"></a-entity>
           <a-entity id="pauseUI" position="0 0 -2.45" visible="false"></a-entity>

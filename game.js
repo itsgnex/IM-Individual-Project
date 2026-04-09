@@ -217,6 +217,7 @@ const LEVEL_DATA = {
 const GameManager = {
   STATES: {
     SPLASH: "SPLASH",
+    STORY_INTRO: "STORY_INTRO",
     MENU: "MENU",
     LEVEL_1: "LEVEL_1",
     LEVEL_2: "LEVEL_2",
@@ -233,8 +234,8 @@ const GameManager = {
   },
 
   STUDENT_INFO: {
-    name: "Your Name",
-    id: "Your Student ID",
+    name: "Ratna Koushik Appasani",
+    id: "650811",
     course: "Sky Ring Flyer VR Assignment"
   },
 
@@ -254,6 +255,27 @@ const GameManager = {
   },
 
   ENDLESS_THEMES: ["Day", "Sunset", "Night"],
+
+  STORY_SLIDES: [
+    {
+      image: "story1.png",
+      audio: "speech1.mp3",
+      title: "The Journey Begins",
+      text: "A small paper plane rises into a magical sky where glowing rings and drifting clouds mark the path ahead."
+    },
+    {
+      image: "story2.png",
+      audio: "speech2.mp3",
+      title: "A Sky Full Of Wonders",
+      text: "Floating islands, bright gates, and shimmering air currents turn each stretch of sky into a gentle storybook challenge."
+    },
+    {
+      image: "story3.png",
+      audio: "speech3.mp3",
+      title: "Guide The Flight",
+      text: "Hold your line, follow the glowing trail, and carry the little plane safely through this whimsical journey above the clouds."
+    }
+  ],
 
   bounds: {
     xMin: -5.2,
@@ -324,6 +346,11 @@ const GameManager = {
   finishGateEntity: null,
   currentEnvironment: null,
   textures: {},
+  storySlideIndex: 0,
+  storyAudioEl: null,
+  storyAudioSrc: "",
+  storyAudioFadeTimer: null,
+  storyIntroRefs: null,
 
   init() {
     this.sceneEl = document.getElementById("scene");
@@ -352,8 +379,17 @@ const GameManager = {
     this.htmlMenuThemeButton = document.getElementById("htmlMenuThemeButton");
     this.htmlStoryModeButton = document.getElementById("htmlStoryModeButton");
     this.htmlEndlessModeButton = document.getElementById("htmlEndlessModeButton");
+    this.htmlStoryOverlay = document.getElementById("story-overlay");
+    this.htmlStoryProgress = document.getElementById("storySlideProgress");
+    this.htmlStoryImageWrap = document.getElementById("storyImageWrap");
+    this.htmlStoryImage = document.getElementById("storySlideImage");
+    this.htmlStoryHeading = document.getElementById("storySlideHeading");
+    this.htmlStoryText = document.getElementById("storySlideText");
+    this.htmlStorySkipButton = document.getElementById("htmlStorySkipButton");
+    this.htmlStoryNextButton = document.getElementById("htmlStoryNextButton");
 
     this.splashUI = document.getElementById("splashUI");
+    this.storyIntroUI = document.getElementById("storyIntroUI");
     this.menuUI = document.getElementById("menuUI");
     this.hudUI = document.getElementById("hudUI");
     this.pauseUI = document.getElementById("pauseUI");
@@ -366,6 +402,7 @@ const GameManager = {
 
     this.loadHighScore();
     this.setupHtmlSplashContent();
+    this.setupStoryIntroMedia();
     this.prepareTextures();
     this.buildCockpitModel();
     this.applyEnvironment("menu");
@@ -401,6 +438,26 @@ const GameManager = {
     if (this.htmlSplashTagline) {
       this.htmlSplashTagline.textContent = "A whimsical stereoscopic VR sky run";
     }
+  },
+
+  setupStoryIntroMedia() {
+    if (this.htmlStoryImage && this.htmlStoryImageWrap) {
+      this.htmlStoryImage.addEventListener("load", () => {
+        this.htmlStoryImageWrap.classList.remove("is-fallback");
+      });
+
+      this.htmlStoryImage.addEventListener("error", () => {
+        this.htmlStoryImageWrap.classList.add("is-fallback");
+      });
+    }
+
+    this.storyAudioEl = new Audio();
+    this.storyAudioEl.loop = false;
+    this.storyAudioEl.preload = "auto";
+    this.storyAudioEl.volume = 0.7;
+    this.storyAudioEl.addEventListener("error", () => {
+      console.log("[Sky Ring Flyer] Story intro audio unavailable");
+    });
   },
 
   prepareTextures() {
@@ -1476,6 +1533,7 @@ const GameManager = {
 
   buildUI() {
     this.clearEntity(this.splashUI);
+    this.clearEntity(this.storyIntroUI);
     this.clearEntity(this.menuUI);
     this.clearEntity(this.hudUI);
     this.clearEntity(this.pauseUI);
@@ -1483,6 +1541,7 @@ const GameManager = {
     this.clearEntity(this.gameOverUI);
 
     this.buildSplashUI();
+    this.buildStoryIntroUI();
     this.buildMenuUI();
     this.buildHudUI();
     this.buildPauseUI();
@@ -1492,6 +1551,52 @@ const GameManager = {
 
   buildSplashUI() {
     // Splash presentation is now handled by the HTML/CSS overlay for cleaner layout.
+  },
+
+  buildStoryIntroUI() {
+    const panel = this.createPanel(this.storyIntroUI, 3.02, 2.86, "#07263b", 0.82, {
+      overlayColor: "#061221",
+      overlayOpacity: 0.46,
+      innerOverlayColor: "#08192a",
+      innerOverlayOpacity: 0.26,
+      accentOpacity: 0.2
+    });
+
+    this.storyIntroRefs = {
+      progress: this.createText(panel, "Story 1 / 3", "0 1.16 0.02", 1.88, "#dbeafe", 18),
+      image: this.createElement("a-plane", panel, {
+        width: 2.42,
+        height: 1.36,
+        position: "0 0.38 0.02",
+        material: "color: #0f2031; opacity: 0.94; shader: flat"
+      }),
+      title: this.createText(panel, "", "0 -0.64 0.02", 2.45, "#ffffff", 28),
+      body: this.createText(panel, "", "0 -1.02 0.02", 2.58, "#eff6ff", 28)
+    };
+
+    this.storyIntroRefs.skipButton = this.createButton(panel, {
+      id: "storySkipButton",
+      label: "Skip",
+      action: "story-skip",
+      width: 1.08,
+      height: 0.24,
+      position: "-0.7 -1.44 0.03",
+      color: "#36556b",
+      hoverColor: "#44667f"
+    });
+
+    this.storyIntroRefs.nextButton = this.createButton(panel, {
+      id: "storyNextButton",
+      label: "Next",
+      action: "story-next",
+      width: 1.32,
+      height: 0.24,
+      position: "0.74 -1.44 0.03",
+      color: "#0b8be7",
+      hoverColor: "#1da8ff"
+    });
+
+    this.updateStoryIntroContent();
   },
 
   buildMenuUI() {
@@ -1709,6 +1814,22 @@ const GameManager = {
       });
     }
 
+    if (this.htmlStoryNextButton) {
+      this.htmlStoryNextButton.addEventListener("click", () => {
+        if (this.state === this.STATES.STORY_INTRO) {
+          this.handleAction("story-next");
+        }
+      });
+    }
+
+    if (this.htmlStorySkipButton) {
+      this.htmlStorySkipButton.addEventListener("click", () => {
+        if (this.state === this.STATES.STORY_INTRO) {
+          this.handleAction("story-skip");
+        }
+      });
+    }
+
     if (this.htmlMenuMusicButton) {
       this.htmlMenuMusicButton.addEventListener("click", () => {
         if (this.state === this.STATES.MENU) {
@@ -1783,7 +1904,13 @@ const GameManager = {
 
     switch (action) {
       case "continue":
-        this.goToMenu();
+        this.startStoryIntro();
+        break;
+      case "story-next":
+        this.advanceStoryIntro();
+        break;
+      case "story-skip":
+        this.skipStoryIntro();
         break;
       case "toggle-music":
         this.toggleMusic();
@@ -1833,6 +1960,9 @@ const GameManager = {
     switch (action) {
       case "continue":
         return this.state === this.STATES.SPLASH;
+      case "story-next":
+      case "story-skip":
+        return this.state === this.STATES.STORY_INTRO;
       case "toggle-music":
       case "toggle-difficulty":
       case "toggle-endless-theme":
@@ -1876,9 +2006,11 @@ const GameManager = {
 
   applyUIVisibility() {
     const gameplayVisible = this.isGameplayState();
+    const storyVrVisible = this.state === this.STATES.STORY_INTRO && this.sceneEl && this.sceneEl.is("vr-mode");
     const menuVrVisible = this.state === this.STATES.MENU && this.sceneEl && this.sceneEl.is("vr-mode");
     const visibility = {
       splashUI: false,
+      storyIntroUI: storyVrVisible,
       menuUI: menuVrVisible,
       hudUI: gameplayVisible,
       pauseUI: this.state === this.STATES.PAUSED,
@@ -1898,14 +2030,20 @@ const GameManager = {
   updateHtmlOverlayVisibility() {
     const inVr = this.sceneEl && this.sceneEl.is("vr-mode");
     const splashVisible = this.state === this.STATES.SPLASH && !inVr;
+    const storyVisible = this.state === this.STATES.STORY_INTRO && !inVr;
     const menuVisible = this.state === this.STATES.MENU && !inVr;
 
     document.body.classList.toggle("splash-active", splashVisible);
+    document.body.classList.toggle("story-intro-active", storyVisible);
     document.body.classList.toggle("menu-active", menuVisible);
     document.body.classList.toggle("vr-mode", Boolean(inVr));
 
     if (this.htmlSplashOverlay) {
       this.htmlSplashOverlay.setAttribute("aria-hidden", splashVisible ? "false" : "true");
+    }
+
+    if (this.htmlStoryOverlay) {
+      this.htmlStoryOverlay.setAttribute("aria-hidden", storyVisible ? "false" : "true");
     }
 
     if (this.htmlMenuOverlay) {
@@ -1914,7 +2052,7 @@ const GameManager = {
   },
 
   updateHtmlSplashVisibility() {
-    if (!this.htmlSplashOverlay && !this.htmlMenuOverlay) {
+    if (!this.htmlSplashOverlay && !this.htmlStoryOverlay && !this.htmlMenuOverlay) {
       return;
     }
 
@@ -1923,7 +2061,7 @@ const GameManager = {
 
   updateSceneBackdropMode() {
     const inVr = this.sceneEl && this.sceneEl.is("vr-mode");
-    const useHtmlBackdrop = this.state === this.STATES.SPLASH || (this.state === this.STATES.MENU && !inVr);
+    const useHtmlBackdrop = this.state === this.STATES.SPLASH || (this.state === this.STATES.STORY_INTRO && !inVr) || (this.state === this.STATES.MENU && !inVr);
 
     if (this.skyEl) {
       this.skyEl.setAttribute("visible", !useHtmlBackdrop);
@@ -2011,11 +2149,148 @@ const GameManager = {
     this.refreshMenu();
   },
 
+  getCurrentStorySlide() {
+    return this.STORY_SLIDES[this.storySlideIndex] || this.STORY_SLIDES[0];
+  },
+
+  startStoryIntro() {
+    this.clearScheduledActions();
+    this.clearWorld();
+    this.resetEndlessState();
+    this.currentLevel = null;
+    this.levelNumber = 0;
+    this.gameMode = this.GAME_MODES.STORY;
+    this.pausedFromState = null;
+    this.transitionLocked = false;
+    this.gameplayFrozen = true;
+    this.storySlideIndex = 0;
+    this.positionPlayerAtStart();
+    this.applyEnvironment("menu");
+    this.updateStoryIntroContent();
+    this.setState(this.STATES.STORY_INTRO);
+    this.playStoryIntroAudio();
+  },
+
+  advanceStoryIntro() {
+    if (this.storySlideIndex < this.STORY_SLIDES.length - 1) {
+      this.storySlideIndex += 1;
+      this.updateStoryIntroContent();
+      this.playStoryIntroAudio();
+      return;
+    }
+
+    this.goToMenu();
+  },
+
+  skipStoryIntro() {
+    this.goToMenu();
+  },
+
+  updateStoryIntroContent() {
+    const slide = this.getCurrentStorySlide();
+    const progressText = `Story ${this.storySlideIndex + 1} of ${this.STORY_SLIDES.length}`;
+    const nextLabel = this.storySlideIndex === this.STORY_SLIDES.length - 1 ? "Open Menu" : "Next";
+
+    document.body.style.setProperty("--story-bg-image", `url("${slide.image}")`);
+
+    if (this.htmlStoryProgress) {
+      this.htmlStoryProgress.textContent = progressText;
+    }
+
+    if (this.htmlStoryHeading) {
+      this.htmlStoryHeading.textContent = slide.title;
+    }
+
+    if (this.htmlStoryText) {
+      this.htmlStoryText.textContent = slide.text;
+    }
+
+    if (this.htmlStoryImage && this.htmlStoryImageWrap) {
+      this.htmlStoryImageWrap.classList.remove("is-fallback");
+      this.htmlStoryImage.src = slide.image;
+      this.htmlStoryImage.alt = slide.title;
+    }
+
+    if (this.htmlStoryNextButton) {
+      this.htmlStoryNextButton.textContent = nextLabel;
+    }
+
+    if (this.storyIntroRefs) {
+      this.setText(this.storyIntroRefs.progress, progressText, 1.88, "#dbeafe", 18);
+      this.setText(this.storyIntroRefs.title, slide.title, 2.45, "#ffffff", 26);
+      this.setText(this.storyIntroRefs.body, slide.text, 2.58, "#eff6ff", 26);
+      this.setButtonLabel(this.storyIntroRefs.nextButton, nextLabel);
+      this.storyIntroRefs.image.setAttribute(
+        "material",
+        `src: ${slide.image}; color: #0f2031; opacity: 0.94; transparent: true; shader: flat`
+      );
+    }
+  },
+
+  playStoryIntroAudio() {
+    if (!this.storyAudioEl) {
+      return;
+    }
+
+    const slide = this.getCurrentStorySlide();
+    const audioSrc = slide.audio || "story.mp3";
+
+    if (this.storyAudioFadeTimer) {
+      window.clearInterval(this.storyAudioFadeTimer);
+      this.storyAudioFadeTimer = null;
+    }
+
+    if (this.storyAudioSrc !== audioSrc) {
+      this.storyAudioSrc = audioSrc;
+      this.storyAudioEl.src = audioSrc;
+      this.storyAudioEl.load();
+    }
+
+    this.storyAudioEl.volume = 0.7;
+    this.storyAudioEl.currentTime = 0;
+    this.storyAudioEl.play().catch(() => {
+      // Story audio is optional and may not exist.
+    });
+  },
+
+  stopStoryIntroAudio(withFade = true) {
+    if (!this.storyAudioEl) {
+      return;
+    }
+
+    if (this.storyAudioFadeTimer) {
+      window.clearInterval(this.storyAudioFadeTimer);
+      this.storyAudioFadeTimer = null;
+    }
+
+    if (!withFade || this.storyAudioEl.paused) {
+      this.storyAudioEl.pause();
+      this.storyAudioEl.currentTime = 0;
+      this.storyAudioEl.volume = 0.7;
+      return;
+    }
+
+    const step = this.storyAudioEl.volume / 6;
+    this.storyAudioFadeTimer = window.setInterval(() => {
+      const nextVolume = Math.max(0, this.storyAudioEl.volume - step);
+      this.storyAudioEl.volume = nextVolume;
+
+      if (nextVolume <= 0.01) {
+        window.clearInterval(this.storyAudioFadeTimer);
+        this.storyAudioFadeTimer = null;
+        this.storyAudioEl.pause();
+        this.storyAudioEl.currentTime = 0;
+        this.storyAudioEl.volume = 0.7;
+      }
+    }, 45);
+  },
+
   startNewGame() {
     this.startStoryGame();
   },
 
   startStoryGame() {
+    this.stopStoryIntroAudio();
     this.gameMode = this.GAME_MODES.STORY;
     const difficultySettings = this.DIFFICULTY[this.difficulty];
     this.score = 0;
@@ -2028,6 +2303,7 @@ const GameManager = {
   },
 
   startEndlessGame() {
+    this.stopStoryIntroAudio();
     console.log("[Sky Ring Flyer] startEndlessGame called");
     const difficultySettings = this.DIFFICULTY[this.difficulty];
 
@@ -2460,6 +2736,7 @@ const GameManager = {
 
   goToMenu() {
     this.clearScheduledActions();
+    this.stopStoryIntroAudio();
     this.clearWorld();
     this.resetEndlessState();
     this.currentLevel = null;
